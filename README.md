@@ -1,5 +1,7 @@
 # Murmur
 
+<img src="https://i.imgur.com/x61SFGx.png" width="400" alt="Murmur screenshot">
+
 **The Anti-Social Network**
 
 Murmur is a privacy-first anonymous group chat app for Android built for quick, temporary conversations without accounts, usernames, or persistent identities.
