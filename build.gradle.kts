@@ -7,14 +7,16 @@ plugins {
 
 android {
     namespace = "com.murmur.app"
-    compileSdk = 34
+    compileSdk = 35
+    flavorDimensions += "env"
 
     defaultConfig {
         applicationId = "com.murmur.app"
         minSdk = 26
-        targetSdk = 34
-        versionCode = 1
-        versionName = "1.0"
+        targetSdk = 35
+        versionCode = 11
+        versionName = "1.0.7"
+
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -29,6 +31,23 @@ android {
         }
     }
 
+    productFlavors {
+        create("dev") {
+            dimension = "env"
+            applicationIdSuffix = ".dev"
+            versionNameSuffix = "-dev"
+            buildConfigField("boolean", "IS_DEV", "true")
+            buildConfigField("boolean", "TEST_MODE_LOBBY", "false")
+        }
+        create("prod") {
+            dimension = "env"
+            buildConfigField("boolean", "IS_DEV", "false")
+            buildConfigField("boolean", "TEST_MODE_LOBBY", "true") // ←  testing build
+        }
+    }
+
+
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
@@ -40,11 +59,16 @@ android {
 
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 
 dependencies {
+    implementation("com.android.billingclient:billing-ktx:7.0.0")
     implementation("androidx.compose.ui:ui-text-google-fonts:1.6.5")
+    implementation("androidx.fragment:fragment-ktx:1.6.2")
+    implementation("com.airbnb.android:lottie-compose:6.4.0")
+
 
     // ✅ Keep foundation at this version for animateItemPlacement()
     implementation("androidx.compose.foundation:foundation:1.6.5")
@@ -61,7 +85,7 @@ dependencies {
     implementation("androidx.compose.animation:animation:1.6.5")
 
     implementation("com.google.firebase:firebase-database-ktx:20.3.0")
-    implementation("androidx.navigation:navigation-compose:2.7.5")
+    implementation("androidx.navigation:navigation-compose:2.7.7")
     implementation("com.google.zxing:core:3.5.2")
 
     implementation(libs.androidx.core.ktx)
@@ -72,6 +96,7 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
+
     implementation("androidx.compose.material:material-icons-extended")
     implementation(libs.firebase.auth.ktx)
 

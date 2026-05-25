@@ -9,7 +9,9 @@ import android.util.Size
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.OptIn
 import androidx.camera.core.CameraSelector
+import androidx.camera.core.ExperimentalGetImage
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageProxy
 import androidx.camera.lifecycle.ProcessCameraProvider
@@ -49,6 +51,7 @@ class QRScannerActivity : ComponentActivity() {
     private fun allPermissionsGranted() =
         ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
 
+    @OptIn(ExperimentalGetImage::class)
     private fun startCamera() {
         val cameraProviderFuture = ProcessCameraProvider.getInstance(this)
 
@@ -82,6 +85,7 @@ class QRScannerActivity : ComponentActivity() {
         }, ContextCompat.getMainExecutor(this))
     }
 
+    @androidx.camera.core.ExperimentalGetImage
     private fun processImageProxy(imageProxy: ImageProxy) {
         val mediaImage = imageProxy.image ?: return
         val image = InputImage.fromMediaImage(mediaImage, imageProxy.imageInfo.rotationDegrees)
@@ -107,16 +111,58 @@ class QRScannerActivity : ComponentActivity() {
     }
 
     private fun handleScannedCode(inviteId: String) {
-        StreamRepository.getStreamIdForInvite(inviteId) { streamId ->
+        val raw = inviteId
 
-            if (streamId != null) {
-                Log.d("QR_SCAN", "Scanned Murmur invite code: $inviteId")
-//                Toast.makeText(this, "Scanned: $inviteId", Toast.LENGTH_SHORT).show()
-                val resultIntent = Intent().apply {
-                    putExtra("streamId", streamId)
+        // 1) New path: intent URI like
+        // intent://join?sid=STREAM_ID#Intent;scheme=murmur;package=...;S.browser_fallback_url=...;end
+        val sidFromIntent = if (raw.startsWith("intent://", ignoreCase = true)) {
+            // Extract sid query param without fully parsing the intent URI
+            val match = Regex("""\?sid=([^#&]+)""").find(raw)
+            match?.groupValues?.getOrNull(1)
+        } else null
+
+        if (!sidFromIntent.isNullOrBlank()) {
+            // Join by direct stream id from intent QR
+            StreamRepository.tryJoinStream(this, sidFromIntent) { success, message ->
+                runOnUiThread {
+                    if (success) {
+                        val resultIntent = Intent().apply { putExtra("streamId", sidFromIntent) }
+                        setResult(RESULT_OK, resultIntent)
+                        finish()
+                    } else {
+                        Toast.makeText(this, message ?: "Couldn’t join this stream. Try again.", Toast.LENGTH_SHORT).show()
+                        foundCode = false
+                    }
                 }
-                setResult(RESULT_OK, resultIntent)
-                finish()
+            }
+            return
+        }
+
+        // 2) Legacy path: scantojoin::<inviteId> (keep existing behavior)
+        if (!raw.startsWith("scantojoin::", ignoreCase = true)) {
+            Log.w("QR_SCAN", "Scanned code not recognized: $raw")
+            runOnUiThread {
+                Toast.makeText(this, "Unrecognized QR code", Toast.LENGTH_SHORT).show()
+                foundCode = false
+            }
+            return
+        }
+
+        val cleanedInviteId = raw.removePrefix("scantojoin::")
+        StreamRepository.getStreamIdForInvite(cleanedInviteId) { streamId ->
+            if (streamId != null) {
+                StreamRepository.tryJoinStream(this, streamId) { success, message ->
+                    runOnUiThread {
+                        if (success) {
+                            val resultIntent = Intent().apply { putExtra("streamId", streamId) }
+                            setResult(RESULT_OK, resultIntent)
+                            finish()
+                        } else {
+                            Toast.makeText(this, message ?: "Couldn’t join this stream. Try again.", Toast.LENGTH_SHORT).show()
+                            foundCode = false
+                        }
+                    }
+                }
             } else {
                 runOnUiThread {
                     Toast.makeText(this, "Invalid invite code", Toast.LENGTH_SHORT).show()
@@ -125,4 +171,6 @@ class QRScannerActivity : ComponentActivity() {
             }
         }
     }
+
+
 }

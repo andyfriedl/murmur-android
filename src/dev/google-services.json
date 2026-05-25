@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "282606560342",
+    "project_id": "murmur-dev-a4686",
+    "storage_bucket": "murmur-dev-a4686.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:282606560342:android:ea4d8d92bae10cccea87f7",
+        "android_client_info": {
+          "package_name": "com.murmur.app.dev"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCG7WUQUFkZFe6QCaDOLKKse6ZzZz97ILY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

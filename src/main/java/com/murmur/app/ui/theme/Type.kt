@@ -1,60 +1,44 @@
 package com.murmur.app.ui.theme
 
 import androidx.compose.material3.Typography
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
 import com.murmur.app.R
 
 
-val LexendFont = FontFamily(
-    Font(R.font.lexend_variablefont_wght),
+// Make sure the file exists at: app/src/main/res/font/lexend_variablefont_wght.ttf (or .otf)
+val Lexend = FontFamily(
+    Font(R.font.lexend_variablefont_wght)
 )
 
-// Set of Material typography styles to start with
-val Typography = Typography(
+// Helper: apply a font family to every Material3 default style
+private fun Typography.withFontFamily(family: FontFamily): Typography = Typography(
+    displayLarge   = displayLarge.copy(fontFamily = family),
+    displayMedium  = displayMedium.copy(fontFamily = family),
+    displaySmall   = displaySmall.copy(fontFamily = family),
 
+    headlineLarge  = headlineLarge.copy(fontFamily = family),
+    headlineMedium = headlineMedium.copy(fontFamily = family),
+    headlineSmall  = headlineSmall.copy(fontFamily = family),
 
-    displayLarge = TextStyle(
-        fontFamily = LexendFont,
-        fontSize = 57.sp
+    titleLarge     = titleLarge.copy(fontFamily = family),
+    titleMedium    = titleMedium.copy(fontFamily = family),
+    titleSmall     = titleSmall.copy(fontFamily = family),
+
+    bodyLarge      = bodyLarge.copy(fontFamily = family),
+    bodyMedium     = bodyMedium.copy(fontFamily = family),
+    bodySmall      = bodySmall.copy(fontFamily = family),
+
+    labelLarge = labelLarge.copy(
+        fontFamily = family,
+        fontSize = 18.sp,
+        fontWeight = FontWeight.Normal
     ),
-    displayMedium = TextStyle(
-        fontFamily = LexendFont,
-        fontSize = 45.sp
-    ),
-    displaySmall = TextStyle(
-        fontFamily = LexendFont,
-        fontSize = 36.sp
-    ),
-    titleLarge = TextStyle(
-        fontFamily = LexendFont,
-        fontSize = 22.sp
-    ),
-    bodyLarge = TextStyle(
-        fontFamily = LexendFont,
-        fontSize = 16.sp,
-        lineHeight = 24.sp
-    ),
-    labelLarge = TextStyle(
-        fontFamily = LexendFont,
-        fontSize = 14.sp
-    )
-    /* Other default text styles to override
-    titleLarge = TextStyle(
-        fontFamily = FontFamily.Default,
-        fontWeight = FontWeight.Normal,
-        fontSize = 22.sp,
-        lineHeight = 28.sp,
-        letterSpacing = 0.sp
-    ),
-    labelSmall = TextStyle(
-        fontFamily = FontFamily.Default,
-        fontWeight = FontWeight.Medium,
-        fontSize = 11.sp,
-        lineHeight = 16.sp,
-        letterSpacing = 0.5.sp
-    )
-    */
+    labelMedium    = labelMedium.copy(fontFamily = family),
+    labelSmall     = labelSmall.copy(fontFamily = family),
 )
+
+// This is what Theme.kt uses
+val AppTypography: Typography = Typography().withFontFamily(Lexend)
