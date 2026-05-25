@@ -69,6 +69,8 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import com.murmur.app.ui.StreamNoticeDialog
 
+import android.util.Log
+
 
 object DeepLinkBus {
     private val _events = MutableSharedFlow<String>(extraBufferCapacity = 1)
@@ -80,7 +82,7 @@ object DeepLinkBus {
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
+        Log.d("MurmurRelayDebug", "Key length: ${MurmurRelayDebug.createTestKeyLength()}")
 
         FirebaseAuth.getInstance().signInAnonymously()
             .addOnCompleteListener { task ->
