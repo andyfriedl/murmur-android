@@ -64,6 +64,8 @@ android {
 }
 
 dependencies {
+    implementation(project(":murmurrelay_core"))
+
     implementation("com.android.billingclient:billing-ktx:7.0.0")
     implementation("androidx.compose.ui:ui-text-google-fonts:1.6.5")
     implementation("androidx.fragment:fragment-ktx:1.6.2")
