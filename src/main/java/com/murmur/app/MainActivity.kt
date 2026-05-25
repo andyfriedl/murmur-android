@@ -68,7 +68,8 @@ import androidx.compose.ui.platform.LocalConfiguration
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import com.murmur.app.ui.StreamNoticeDialog
-
+import android.util.Log
+import com.murmurrelay.core.MurmurRelay
 
 
 object DeepLinkBus {
@@ -81,6 +82,9 @@ object DeepLinkBus {
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        val testKey = MurmurRelay.createChannelKey()
+        Log.d("MurmurRelayTest", "Generated key length: ${testKey.length}")
 
         FirebaseAuth.getInstance().signInAnonymously()
             .addOnCompleteListener { task ->
