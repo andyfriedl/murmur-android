@@ -3,6 +3,7 @@ package com.murmur.app
 import com.murmurrelay.core.MurmurRelay
 import com.murmurrelay.core.transport.InMemoryRelayTransport
 import com.murmurrelay.core.transport.RelayTransport
+import com.google.firebase.database.DatabaseReference
 
 class MurmurRelayChatClient(
     private val channelId: String,
@@ -35,6 +36,17 @@ class MurmurRelayChatClient(
                 channelId = channelId,
                 channelKey = MurmurRelay.createChannelKey(),
                 transport = InMemoryRelayTransport()
+            )
+        }
+
+        fun createForFirebaseChannel(
+            channelId: String,
+            database: DatabaseReference
+        ): MurmurRelayChatClient {
+            return MurmurRelayChatClient(
+                channelId = channelId,
+                channelKey = MurmurRelay.createChannelKey(),
+                transport = FirebaseMurmurRelayTransport(database)
             )
         }
     }
