@@ -16,7 +16,7 @@
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.Bluegill">
+        android:theme="@style/Theme.Murmur">
 
         <activity android:name="com.murmur.app.QRScannerActivity" />
 
@@ -24,7 +24,7 @@
             android:name="com.murmur.app.MainActivity"
             android:exported="true"
             android:label="@string/app_name"
-            android:theme="@style/Theme.Bluegill">
+            android:theme="@style/Theme.Murmur">
 
             <!-- Launcher intent -->
             <intent-filter>
