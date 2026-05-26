@@ -1,10 +1,10 @@
 package com.murmur.app
 
+import com.google.firebase.database.DatabaseReference
 import com.murmurrelay.core.MurmurRelay
+import com.murmurrelay.core.MurmurRelayResult
 import com.murmurrelay.core.transport.InMemoryRelayTransport
 import com.murmurrelay.core.transport.RelayTransport
-import com.google.firebase.database.DatabaseReference
-import com.murmurrelay.core.MurmurRelayResult
 
 class MurmurRelayChatClient(
     private val channelId: String,
@@ -47,7 +47,7 @@ class MurmurRelayChatClient(
             channelId = channelId,
             channelKey = channelKey,
             payload = "MurmurRelay local test"
-        ) { result ->
+        ) {
             // No-op for now. We only care that observe receives the decrypted payload.
         }
     }

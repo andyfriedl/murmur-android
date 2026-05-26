@@ -17,7 +17,7 @@ class FirebaseMurmurRelayTransport(
         onComplete: (MurmurRelayResult) -> Unit
     ) {
         val messageRef = database
-            .child("murmurRelay")
+            .child("shadowrelay")
             .child("rooms")
             .child(roomId)
             .child("messages")
@@ -42,7 +42,7 @@ class FirebaseMurmurRelayTransport(
         onMessage: (String) -> Unit
     ) {
         database
-            .child("murmurRelay")
+            .child("shadowrelay")
             .child("rooms")
             .child(roomId)
             .child("messages")
