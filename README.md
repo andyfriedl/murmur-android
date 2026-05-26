@@ -39,11 +39,22 @@ Just ephemeral conversation.
 
 ## Current Behavior
 
-Messages persist only for the life of the active stream.
+- ✅ Messages persist only for the life of the active stream.
+- ✅ When a stream is deleted, messages and associated session data are removed.
+- Planned future versions may support auto-expiring messages.
 
-When a stream is deleted, messages and associated session data are removed.
+## 🟨 In Progress
 
-Planned future versions may support auto-expiring messages.
+Murmur is currently being updated to extract message encryption and transport logic into a separate SDK called [MurmurRelay](https://github.com/andyfriedl/murmur-relay). A Firebase-backed MurmurRelay transport has been added and tested, but the full app migration is still in progress.
+
+[MurmurRelay](https://github.com/andyfriedl/murmur-relay) is a transport-agnostic encrypted messaging layer that handles:
+
+- shared channel key generation
+- message encryption and decryption
+- send / observe messaging flow
+- pluggable transports such as Firebase or future relay backends
+
+The goal is to keep Murmur’s app code focused on the chat experience while moving encryption and message transport into a reusable, testable SDK boundary.
 
 ## Tech Stack
 
@@ -55,12 +66,17 @@ Planned future versions may support auto-expiring messages.
 **Backend**
 - Firebase Realtime Database
 - Firebase Anonymous Authentication
+- 🟨 MurmurRelay SDK integration in progress
+- Transport adapter currently using Firebase
+- Future-ready for alternative relay backends
 
 **Architecture**
 - Repository pattern
 - Session state management
 - QR invite flow
 - Stream-based membership model
+- MurmurRelay SDK integration in progress
+- Transport abstraction for encrypted messaging
 
 ## Project Goals
 
@@ -82,9 +98,9 @@ Active side project / work in progress.
 Future exploration may include:
 
 - auto-expiring messages
-- improved moderation / cleanup logic
-- transport abstraction
-- alternative messaging backends
+- improved cleanup logic
+- 🟨 full [MurmurRelay](https://github.com/andyfriedl/murmur-relay) migration
+- alternative relay backends
 
 ## Screenshots
 
