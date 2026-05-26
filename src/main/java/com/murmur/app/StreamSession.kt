@@ -9,6 +9,8 @@ object StreamSession {
     private const val PREF_NAME = "stream_prefs"
     private const val KEY_STREAM_ID = "stream_id"
 
+    private const val KEY_RELAY_CHANNEL_KEY = "relay_channel_key"
+
     fun getOrCreateStreamId(context: Context): String {
         val prefs: SharedPreferences = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
         val existing = prefs.getString(KEY_STREAM_ID, null)
@@ -59,6 +61,21 @@ object StreamSession {
 
     fun getDeviceId(context: Context): String? {
         return FirebaseAuth.getInstance().currentUser?.uid
+    }
+
+    fun setRelayChannelKey(context: Context, key: String) {
+        val prefs = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
+        prefs.edit().putString(KEY_RELAY_CHANNEL_KEY, key).apply()
+    }
+
+    fun getRelayChannelKey(context: Context): String? {
+        val prefs = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
+        return prefs.getString(KEY_RELAY_CHANNEL_KEY, null)
+    }
+
+    fun clearRelayChannelKey(context: Context) {
+        val prefs = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
+        prefs.edit().remove(KEY_RELAY_CHANNEL_KEY).apply()
     }
 }
 
