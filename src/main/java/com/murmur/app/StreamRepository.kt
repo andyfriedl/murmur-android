@@ -18,6 +18,14 @@ import com.murmur.app.BuildConfig
 class StreamRepository(private val context: Context, private val streamId: String) {
     private val db = FirebaseDatabase.getInstance().reference
     private val deviceId = StreamSession.getDeviceId(context)
+    private val relayClient: MurmurRelayChatClient? = StreamSession.getRelayChannelKey(context)
+        ?.let { savedRelayKey ->
+            MurmurRelayChatClient(
+                channelId = streamId,
+                channelKey = savedRelayKey,
+                transport = FirebaseMurmurRelayTransport(db)
+            )
+        }
 
     private var messagesListener: ValueEventListener? = null
     private var membersListener: ValueEventListener? = null
