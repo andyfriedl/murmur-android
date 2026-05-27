@@ -69,10 +69,18 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import com.murmur.app.ui.StreamNoticeDialog
 
+data class PendingJoin(
+    val sid: String,
+    val relayKey: String? = null
+)
+
 object DeepLinkBus {
-    private val _events = MutableSharedFlow<String>(extraBufferCapacity = 1)
+    private val _events = MutableSharedFlow<PendingJoin>(extraBufferCapacity = 1)
     val events = _events.asSharedFlow()
-    fun emitSid(sid: String) { _events.tryEmit(sid) }
+
+    fun emitJoin(sid: String, relayKey: String? = null) {
+        _events.tryEmit(PendingJoin(sid, relayKey))
+    }
 }
 
 
@@ -99,12 +107,17 @@ class MainActivity : ComponentActivity() {
         BillingHelper.queryProductDetails(listOf("pro_upgrade1"))
 
         // Deep link: capture sid from murmur://join?sid=...
-        intent?.data?.getQueryParameter("sid")?.let { incomingSid ->
-            if (incomingSid.isNotBlank()) {
-                getSharedPreferences("deeplinks", MODE_PRIVATE)
-                    .edit()
-                    .putString("pending_join_sid", incomingSid)
-                    .apply()
+        val incomingSid = intent?.data?.getQueryParameter("sid")
+        val incomingRelayKey = intent?.data?.getQueryParameter("rk")
+
+        if (!incomingSid.isNullOrBlank()) {
+            getSharedPreferences("deeplinks", MODE_PRIVATE)
+                .edit()
+                .putString("pending_join_sid", incomingSid)
+                .apply()
+
+            if (!incomingRelayKey.isNullOrBlank()) {
+                StreamSession.setRelayChannelKey(this, incomingRelayKey)
             }
         }
 
@@ -139,11 +152,15 @@ class MainActivity : ComponentActivity() {
 
                 // Warm-start: react to new sid events while the activity is alive
                 LaunchedEffect(Unit) {
-                    DeepLinkBus.events.collect { sid ->
-                        StreamRepository.tryJoinStream(ctx, sid) { success, message ->
+                    DeepLinkBus.events.collect { pendingJoin ->
+                        pendingJoin.relayKey?.let { relayKey ->
+                            StreamSession.setRelayChannelKey(ctx, relayKey)
+                        }
+
+                        StreamRepository.tryJoinStream(ctx, pendingJoin.sid) { success, message ->
                             if (success) {
                                 android.os.Handler(android.os.Looper.getMainLooper()).post {
-                                    navController.navigate("stream/$sid")
+                                    navController.navigate("stream/${pendingJoin.sid}")
                                 }
                             } else {
                                 android.widget.Toast
@@ -168,7 +185,8 @@ class MainActivity : ComponentActivity() {
         // Warm-start deep link handling: murmur://join?sid=...
         val sid = intent?.data?.getQueryParameter("sid")
         if (!sid.isNullOrBlank()) {
-            DeepLinkBus.emitSid(sid)
+            val relayKey = intent?.data?.getQueryParameter("rk")
+            DeepLinkBus.emitJoin(sid, relayKey)
         }
     }
 }
@@ -303,7 +321,12 @@ fun StartScreen(
             ) { result ->
                 if (result.resultCode == Activity.RESULT_OK) {
                     val scannedId = result.data?.getStringExtra("streamId")
+                    val relayKey = result.data?.getStringExtra("relayKey")
+
                     if (!scannedId.isNullOrBlank()) {
+                        if (!relayKey.isNullOrBlank()) {
+                            StreamSession.setRelayChannelKey(context, relayKey)
+                        }
                         StreamRepository.tryJoinStream(context, scannedId) { success, message ->
                             if (success) {
                                 onJoinStream(scannedId)

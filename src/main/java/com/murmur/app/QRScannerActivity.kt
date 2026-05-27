@@ -3,6 +3,7 @@ package com.murmur.app
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
+import java.net.URLDecoder
 import android.os.Bundle
 import android.util.Log
 import android.util.Size
@@ -113,20 +114,33 @@ class QRScannerActivity : ComponentActivity() {
     private fun handleScannedCode(inviteId: String) {
         val raw = inviteId
 
-        // 1) New path: intent URI like
-        // intent://join?sid=STREAM_ID#Intent;scheme=murmur;package=...;S.browser_fallback_url=...;end
+        fun extractQueryParam(name: String): String? {
+            val match = Regex("""[?&]$name=([^#&]+)""").find(raw)
+            return match?.groupValues?.getOrNull(1)?.let {
+                URLDecoder.decode(it, "UTF-8")
+            }
+        }
+
+        // 1) Intent URI path:
+        // intent://join?sid=STREAM_ID&rk=RELAY_KEY#Intent;...
         val sidFromIntent = if (raw.startsWith("intent://", ignoreCase = true)) {
-            // Extract sid query param without fully parsing the intent URI
-            val match = Regex("""\?sid=([^#&]+)""").find(raw)
-            match?.groupValues?.getOrNull(1)
+            extractQueryParam("sid")
+        } else null
+
+        val relayKeyFromIntent = if (raw.startsWith("intent://", ignoreCase = true)) {
+            extractQueryParam("rk")
         } else null
 
         if (!sidFromIntent.isNullOrBlank()) {
-            // Join by direct stream id from intent QR
             StreamRepository.tryJoinStream(this, sidFromIntent) { success, message ->
                 runOnUiThread {
                     if (success) {
-                        val resultIntent = Intent().apply { putExtra("streamId", sidFromIntent) }
+                        val resultIntent = Intent().apply {
+                            putExtra("streamId", sidFromIntent)
+                            if (!relayKeyFromIntent.isNullOrBlank()) {
+                                putExtra("relayKey", relayKeyFromIntent)
+                            }
+                        }
                         setResult(RESULT_OK, resultIntent)
                         finish()
                     } else {
@@ -138,7 +152,7 @@ class QRScannerActivity : ComponentActivity() {
             return
         }
 
-        // 2) Legacy path: scantojoin::<inviteId> (keep existing behavior)
+        // 2) Legacy path: scantojoin::<inviteId>
         if (!raw.startsWith("scantojoin::", ignoreCase = true)) {
             Log.w("QR_SCAN", "Scanned code not recognized: $raw")
             runOnUiThread {
@@ -154,7 +168,9 @@ class QRScannerActivity : ComponentActivity() {
                 StreamRepository.tryJoinStream(this, streamId) { success, message ->
                     runOnUiThread {
                         if (success) {
-                            val resultIntent = Intent().apply { putExtra("streamId", streamId) }
+                            val resultIntent = Intent().apply {
+                                putExtra("streamId", streamId)
+                            }
                             setResult(RESULT_OK, resultIntent)
                             finish()
                         } else {

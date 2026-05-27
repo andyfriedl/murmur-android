@@ -91,8 +91,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.murmur.app.ui.StreamNoticeDialog
-//import com.murmur.app.BuildConfig
-
+import com.murmurrelay.core.MurmurRelay
 
 
 @Composable
@@ -131,6 +130,13 @@ fun StreamScreen(
 
 
     val inStream = StreamSession.getStreamId(context).isNullOrBlank().not()
+
+    fun getOrCreateRelayKey(): String {
+        return StreamSession.getRelayChannelKey(context)
+            ?: MurmurRelay.createChannelKey().also { newKey ->
+                StreamSession.setRelayChannelKey(context, newKey)
+            }
+    }
 
     BackHandler(enabled = !inStream) {
         (context as? Activity)?.finish()
@@ -242,7 +248,11 @@ fun StreamScreen(
                     StreamRepository.createInviteId(streamId) { inviteId ->
                         isGeneratingQR = false
                         if (inviteId != null) {
-                            val payload = DeepLinkUtil.buildJoinQrPayload(streamId, nonce = inviteId)
+                            val payload = DeepLinkUtil.buildJoinQrPayload(
+                                streamId = streamId,
+                                relayKey = getOrCreateRelayKey(),
+                                nonce = inviteId
+                            )
                             qrBitmap = QRCodeHelper.generateQRCode(payload)
                             lastInviteId = inviteId
                             showQR = true
@@ -961,7 +971,11 @@ fun StreamScreen(
                     if (newId != null && showQR) {
                         println("🔁 New invite created: $newId")
                         lastInviteId = newId
-                        val payload = DeepLinkUtil.buildJoinQrPayload(streamId, nonce = newId)
+                        val payload = DeepLinkUtil.buildJoinQrPayload(
+                            streamId = streamId,
+                            relayKey = getOrCreateRelayKey(),
+                            nonce = newId
+                        )
                         qrBitmap = QRCodeHelper.generateQRCode(payload)
                     }
                 }
