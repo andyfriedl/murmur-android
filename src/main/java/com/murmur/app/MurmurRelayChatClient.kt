@@ -63,11 +63,12 @@ class MurmurRelayChatClient(
 
         fun createForFirebaseChannel(
             channelId: String,
+            channelKey: String,
             database: DatabaseReference
         ): MurmurRelayChatClient {
             return MurmurRelayChatClient(
                 channelId = channelId,
-                channelKey = MurmurRelay.createChannelKey(),
+                channelKey = channelKey,
                 transport = FirebaseMurmurRelayTransport(database)
             )
         }
