@@ -42,10 +42,13 @@ class StreamRepository(private val context: Context, private val streamId: Strin
     val streamDeleted = MutableStateFlow(false)
 
 
-
     init {
-        observeMessages()
-        observeMurmurRelayShadowMessages()
+        if (relayClient != null) {
+            observeMurmurRelayMessages()
+        } else {
+            observeMessages()
+        }
+
         observeMembers()
         setPresence()
         observeConnection()
@@ -83,20 +86,19 @@ class StreamRepository(private val context: Context, private val streamId: Strin
             }
     }
 
-
-
-
     fun sendMessage(msg: String) {
-        val encrypted = CryptoUtils.encrypt(msg)
-        db.child("streams/$streamId/messages").push().setValue(encrypted)
+        if (relayClient != null) {
+            relayClient.sendMessage(msg) { success ->
+                Log.d("MurmurRelayShadow", "Relay send success: $success")
+            }
+        } else {
+            val encrypted = CryptoUtils.encrypt(msg)
+            db.child("streams/$streamId/messages").push().setValue(encrypted)
+            Log.d("MurmurRelayShadow", "Legacy send used: no relay key")
+        }
 
-
-        relayClient?.sendMessage(msg) { success ->
-            Log.d("MurmurRelayShadow", "Relay shadow send success: $success")
-        } ?: Log.d("MurmurRelayShadow", "Relay shadow send skipped: no relay key")
-
-        // Update lastActive timestamp
-        db.child("streams/$streamId/lastActive").setValue(com.google.firebase.database.ServerValue.TIMESTAMP)
+        db.child("streams/$streamId/lastActive")
+            .setValue(com.google.firebase.database.ServerValue.TIMESTAMP)
     }
 
     private fun observeMessages() {
@@ -118,10 +120,11 @@ class StreamRepository(private val context: Context, private val streamId: Strin
         ref.addValueEventListener(messagesListener as ValueEventListener)
     }
 
-    private fun observeMurmurRelayShadowMessages() {
+    private fun observeMurmurRelayMessages() {
         relayClient?.observeMessages { relayMessage ->
-            Log.d("MurmurRelayShadow", "Relay shadow observed message: $relayMessage")
-        } ?: Log.d("MurmurRelayShadow", "Relay shadow observe skipped: no relay key")
+            messages.value = messages.value + relayMessage
+            Log.d("MurmurRelayShadow", "Relay UI observed message")
+        } ?: Log.d("MurmurRelayShadow", "Relay UI observe skipped: no relay key")
     }
 
     private fun observeConnection() {
