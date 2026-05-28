@@ -45,6 +45,7 @@ class StreamRepository(private val context: Context, private val streamId: Strin
 
     init {
         observeMessages()
+        observeMurmurRelayShadowMessages()
         observeMembers()
         setPresence()
         observeConnection()
@@ -115,6 +116,12 @@ class StreamRepository(private val context: Context, private val streamId: Strin
             override fun onCancelled(error: DatabaseError) {}
         }
         ref.addValueEventListener(messagesListener as ValueEventListener)
+    }
+
+    private fun observeMurmurRelayShadowMessages() {
+        relayClient?.observeMessages { relayMessage ->
+            Log.d("MurmurRelayShadow", "Relay shadow observed message: $relayMessage")
+        } ?: Log.d("MurmurRelayShadow", "Relay shadow observe skipped: no relay key")
     }
 
     private fun observeConnection() {
