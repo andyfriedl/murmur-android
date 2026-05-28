@@ -390,8 +390,7 @@ fun StartScreen(
                     )
                     Spacer(Modifier.width(8.dp))
 //                    Text("Create Stream")
-                    Text("Join Test Lobby")
-                }
+                    Text(if (BuildConfig.TEST_MODE_LOBBY) "Join Test Lobby" else "Create Stream")                }
             }
 
             var showProDialog by remember { mutableStateOf(false) }

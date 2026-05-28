@@ -26,8 +26,17 @@ class MurmurRelayChatClient(
             channelKey = channelKey,
             payload = message
         ) { result ->
-            onComplete(result is MurmurRelayResult.Success)
-        }
+            when (result) {
+                is MurmurRelayResult.Success -> {
+                    android.util.Log.d("MurmurRelayShadow", "Relay client send success")
+                    onComplete(true)
+                }
+
+                is MurmurRelayResult.Error -> {
+                    android.util.Log.e("MurmurRelayShadow", "Relay client send failed: ${result.message}")
+                    onComplete(false)
+                }
+            }        }
     }
 
     fun observeMessages(

@@ -13,6 +13,7 @@ import android.os.Handler
 import android.os.Looper
 import com.google.firebase.auth.FirebaseAuth
 import com.murmur.app.BuildConfig
+import android.util.Log
 
 
 class StreamRepository(private val context: Context, private val streamId: String) {
@@ -87,6 +88,11 @@ class StreamRepository(private val context: Context, private val streamId: Strin
     fun sendMessage(msg: String) {
         val encrypted = CryptoUtils.encrypt(msg)
         db.child("streams/$streamId/messages").push().setValue(encrypted)
+
+
+        relayClient?.sendMessage(msg) { success ->
+            Log.d("MurmurRelayShadow", "Relay shadow send success: $success")
+        } ?: Log.d("MurmurRelayShadow", "Relay shadow send skipped: no relay key")
 
         // Update lastActive timestamp
         db.child("streams/$streamId/lastActive").setValue(com.google.firebase.database.ServerValue.TIMESTAMP)
