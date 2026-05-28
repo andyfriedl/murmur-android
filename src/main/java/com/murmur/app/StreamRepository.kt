@@ -87,14 +87,13 @@ class StreamRepository(private val context: Context, private val streamId: Strin
     }
 
     fun sendMessage(msg: String) {
-        if (relayClient != null) {
-            relayClient.sendMessage(msg) { success ->
-                Log.d("MurmurRelayShadow", "Relay send success: $success")
-            }
-        } else {
-            val encrypted = CryptoUtils.encrypt(msg)
-            db.child("streams/$streamId/messages").push().setValue(encrypted)
-            Log.d("MurmurRelayShadow", "Legacy send used: no relay key")
+        if (relayClient == null) {
+            Log.e("MurmurRelayShadow", "Relay send blocked: no relay key")
+            return
+        }
+
+        relayClient.sendMessage(msg) { success ->
+            Log.d("MurmurRelayShadow", "Relay send success: $success")
         }
 
         db.child("streams/$streamId/lastActive")
