@@ -13,6 +13,7 @@ import com.murmur.app.StartScreen
 import com.murmur.app.StreamScreen
 import com.murmur.app.StreamSession
 import com.murmur.app.BuildConfig
+import com.murmurrelay.core.MurmurRelay
 
 @Composable
 fun AppNavHost(navController: NavHostController) {
@@ -56,6 +57,7 @@ fun AppNavHost(navController: NavHostController) {
                         StreamSession.setStreamId(context, newId)
                         StreamSession.setIsCreator(context, true)
                         StreamSession.setCreatorId(context, newId)
+                        StreamSession.setRelayChannelKey(context, MurmurRelay.createChannelKey())
                         navController.navigate("stream/$newId?fresh=true")
                     }
                 },

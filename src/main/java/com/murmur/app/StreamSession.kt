@@ -36,17 +36,15 @@ object StreamSession {
 
     fun clearStreamId(context: Context) {
         val prefs = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
-        prefs.edit().remove("stream_id").apply()
+        prefs.edit()
+            .remove(KEY_STREAM_ID)
+            .remove(KEY_RELAY_CHANNEL_KEY)
+            .apply()
     }
 
     fun setIsCreator(context: Context, value: Boolean) {
         val prefs = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
         prefs.edit().putBoolean("is_creator", value).apply()
-    }
-
-    fun getIsCreator(context: Context): Boolean {
-        val prefs = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
-        return prefs.getBoolean("is_creator", false)
     }
 
     fun setCreatorId(context: Context, streamId: String) {
@@ -73,10 +71,6 @@ object StreamSession {
         return prefs.getString(KEY_RELAY_CHANNEL_KEY, null)
     }
 
-    fun clearRelayChannelKey(context: Context) {
-        val prefs = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
-        prefs.edit().remove(KEY_RELAY_CHANNEL_KEY).apply()
-    }
 }
 
 
