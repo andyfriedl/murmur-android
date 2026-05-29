@@ -28,7 +28,6 @@ class MurmurRelayChatClient(
         ) { result ->
             when (result) {
                 is MurmurRelayResult.Success -> {
-                    android.util.Log.d("MurmurRelayShadow", "Relay client send success")
                     onComplete(true)
                 }
 

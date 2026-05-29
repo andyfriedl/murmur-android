@@ -9,16 +9,12 @@ import com.google.firebase.database.ValueEventListener
 import com.google.firebase.database.database
 import com.google.firebase.database.ktx.getValue
 import kotlinx.coroutines.flow.MutableStateFlow
-import android.os.Handler
-import android.os.Looper
 import com.google.firebase.auth.FirebaseAuth
-import com.murmur.app.BuildConfig
 import android.util.Log
 
 
 class StreamRepository(private val context: Context, private val streamId: String) {
     private val db = FirebaseDatabase.getInstance().reference
-    private val deviceId = StreamSession.getDeviceId(context)
     private val relayClient: MurmurRelayChatClient? = StreamSession.getRelayChannelKey(context)
         ?.let { savedRelayKey ->
             MurmurRelayChatClient(
@@ -88,12 +84,12 @@ class StreamRepository(private val context: Context, private val streamId: Strin
 
     fun sendMessage(msg: String) {
         if (relayClient == null) {
-            Log.e("MurmurRelayShadow", "Relay send blocked: no relay key")
+            Log.e("MurmurRelay", "Relay send blocked: no relay key")
             return
         }
 
         relayClient.sendMessage(msg) { success ->
-            Log.d("MurmurRelayShadow", "Relay send success: $success")
+            Log.d("MurmurRelay", "Relay send success: $success")
         }
 
         db.child("streams/$streamId/lastActive")
@@ -122,8 +118,7 @@ class StreamRepository(private val context: Context, private val streamId: Strin
     private fun observeMurmurRelayMessages() {
         relayClient?.observeMessages { relayMessage ->
             messages.value = messages.value + relayMessage
-            Log.d("MurmurRelayShadow", "Relay UI observed message")
-        } ?: Log.d("MurmurRelayShadow", "Relay UI observe skipped: no relay key")
+        } ?: Log.e("MurmurRelay", "Relay observe blocked: no relay key")
     }
 
     private fun observeConnection() {
@@ -224,16 +219,6 @@ class StreamRepository(private val context: Context, private val streamId: Strin
         })
     }
 
-    private fun checkIfCreator() {
-        val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
-        db.child("streams/$streamId/creator").get()
-            .addOnSuccessListener { snapshot ->
-                val creatorId = snapshot.getValue(String::class.java)
-                isCreator.value = (creatorId == uid)
-            }
-    }
-
-
     fun clear() {
         messagesListener?.let {
             db.child("streams/$streamId/messages").removeEventListener(it)
@@ -274,7 +259,6 @@ class StreamRepository(private val context: Context, private val streamId: Strin
 
     companion object {
         fun createInviteId(streamId: String, onComplete: (String?) -> Unit) {
-            println("📡 Creating invite for stream: $streamId")
             val inviteId = generateRandomId(6)
             val db = Firebase.database.reference
 
@@ -285,15 +269,10 @@ class StreamRepository(private val context: Context, private val streamId: Strin
 
             db.child("invites").child(inviteId).setValue(inviteData)
                 .addOnSuccessListener {
-                    println("✅ Invite created: $inviteId")
                     onComplete(inviteId)
                 }
                 .addOnFailureListener {
-                    println("❌ Failed to create invite: ${it.message}")
                     onComplete(null)
-                }
-                .addOnCompleteListener {
-                    println("🔁 Invite setValue task completed")
                 }
         }
 
@@ -306,7 +285,6 @@ class StreamRepository(private val context: Context, private val streamId: Strin
                     onResult(streamId)
                 }
                 .addOnFailureListener {
-                    println("❌ Failed to fetch stream for invite: ${it.message}")
                     onResult(null)
                 }
         }
