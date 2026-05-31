@@ -32,7 +32,7 @@ class MurmurRelayChatClient(
                 }
 
                 is MurmurRelayResult.Error -> {
-                    android.util.Log.e("MurmurRelayShadow", "Relay client send failed: ${result.message}")
+                    android.util.Log.e("MurmurRelay", "Relay client send failed: ${result.message}")
                     onComplete(false)
                 }
             }        }

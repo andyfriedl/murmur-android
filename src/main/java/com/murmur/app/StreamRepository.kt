@@ -23,8 +23,6 @@ class StreamRepository(private val context: Context, private val streamId: Strin
                 transport = FirebaseMurmurRelayTransport(db)
             )
         }
-
-    private var messagesListener: ValueEventListener? = null
     private var membersListener: ValueEventListener? = null
     private var connectedRef: com.google.firebase.database.DatabaseReference? = null
     private var connectionListener: com.google.firebase.database.ValueEventListener? = null
@@ -189,9 +187,6 @@ class StreamRepository(private val context: Context, private val streamId: Strin
     }
 
     fun clear() {
-        messagesListener?.let {
-            db.child("streams/$streamId/messages").removeEventListener(it)
-        }
         membersListener?.let {
             db.child("streams/$streamId/members").removeEventListener(it)
         }

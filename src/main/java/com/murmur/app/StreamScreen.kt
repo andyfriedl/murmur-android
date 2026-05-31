@@ -216,7 +216,6 @@ fun StreamScreen(
             showQR = false
             lastInviteId?.let {
                 StreamRepository.deleteInvite(it)
-                println("🧽 Deleted invite: $it")
             }
         }
     }
