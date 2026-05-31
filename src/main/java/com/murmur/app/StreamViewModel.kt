@@ -44,6 +44,8 @@ class StreamViewModel(
 
     fun touchPresence() = repository.touchPresence()
 
+    fun refreshStreamStatus() = repository.refreshStreamStatus()
+
     fun handleStreamDeleted() {
         StreamSession.clearStreamId(context)
     }

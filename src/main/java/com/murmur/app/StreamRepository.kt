@@ -186,6 +186,22 @@ class StreamRepository(private val context: Context, private val streamId: Strin
         })
     }
 
+    fun refreshStreamStatus() {
+        db.child("streams").child(streamId).get()
+            .addOnSuccessListener { snapshot ->
+                val exists = snapshot.exists()
+                val deleted = snapshot.child("deleted").getValue(Boolean::class.java) == true
+                val nuked = snapshot.child("nuked").getValue(Boolean::class.java) == true
+
+                if (!exists || deleted || nuked) {
+                    streamDeleted.value = true
+                }
+            }
+            .addOnFailureListener {
+                streamDeleted.value = true
+            }
+    }
+
     fun clear() {
         membersListener?.let {
             db.child("streams/$streamId/members").removeEventListener(it)

@@ -327,6 +327,7 @@ fun StreamScreen(
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_START || event == Lifecycle.Event.ON_RESUME) {
                 viewModel.touchPresence()
+                viewModel.refreshStreamStatus()
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
@@ -685,8 +686,7 @@ fun StreamScreen(
                 Text(
                     text = "$memberCount in stream",
                     style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onBackground,
-                    modifier = Modifier.padding(top = 4.dp, start = 16.dp)
+                    color = if (memberCount == 1) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onBackground,                    modifier = Modifier.padding(top = 4.dp, start = 16.dp)
                 )
 
                 Spacer(modifier = Modifier.height(12.dp))
