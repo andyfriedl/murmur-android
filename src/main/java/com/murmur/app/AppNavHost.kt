@@ -1,4 +1,3 @@
-import android.widget.Toast
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
@@ -7,8 +6,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import com.google.firebase.database.ktx.database
-import com.google.firebase.ktx.Firebase
 import com.murmur.app.StartScreen
 import com.murmur.app.StreamScreen
 import com.murmur.app.StreamSession
@@ -69,32 +66,9 @@ fun AppNavHost(navController: NavHostController) {
                         return@StartScreen
                     }
 
-                    if (joinId.length == 6) {
-                        val db = Firebase.database.reference
-                        db.child("invites").child(joinId).get().addOnSuccessListener { snapshot ->
-                            if (snapshot.exists()) {
-                                val createdAt = snapshot.child("createdAt").getValue(Long::class.java) ?: 0L
-                                val now = System.currentTimeMillis()
-                                if (now - createdAt < 5 * 60 * 1000) {
-                                    val streamId = snapshot.child("streamId").getValue(String::class.java)
-                                    if (!streamId.isNullOrBlank()) {
-                                        StreamSession.setStreamId(context, streamId)
-                                        StreamSession.setIsCreator(context, false)
-                                        navController.navigate("stream/$streamId?fresh=true")
-                                    }
-                                } else {
-                                    db.child("invites").child(joinId).removeValue()
-                                    Toast.makeText(context, "This invite has expired.", Toast.LENGTH_LONG).show()
-                                }
-                            } else {
-                                Toast.makeText(context, "Invalid invite code.", Toast.LENGTH_LONG).show()
-                            }
-                        }
-                    } else {
-                        StreamSession.setStreamId(context, joinId)
-                        StreamSession.setIsCreator(context, false)
-                        navController.navigate("stream/$joinId")
-                    }
+                    StreamSession.setStreamId(context, joinId)
+                    StreamSession.setIsCreator(context, false)
+                    navController.navigate("stream/$joinId")
                 }
 
             )
