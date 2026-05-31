@@ -213,7 +213,6 @@ fun StreamScreen(
 
     LaunchedEffect(memberCount) {
         if (isCreator && showQR && memberCount > 1) {
-            println("👥 Someone joined! Closing QR and deleting invite.")
             showQR = false
             lastInviteId?.let {
                 StreamRepository.deleteInvite(it)
@@ -953,7 +952,6 @@ fun StreamScreen(
 
             if (isCreator && !showQR) {
                 lastInviteId?.let {
-                    println("🧼 Cleaning up orphaned invite: $it")
                     StreamRepository.deleteInvite(it)
                     lastInviteId = null
                 }
@@ -964,12 +962,10 @@ fun StreamScreen(
 
                 lastInviteId?.let {
                     StreamRepository.deleteInvite(it)
-                    println("⏳ Invite expired: $it")
                 }
 
                 StreamRepository.createInviteId(streamId) { newId ->
                     if (newId != null && showQR) {
-                        println("🔁 New invite created: $newId")
                         lastInviteId = newId
                         val payload = DeepLinkUtil.buildJoinQrPayload(
                             streamId = streamId,

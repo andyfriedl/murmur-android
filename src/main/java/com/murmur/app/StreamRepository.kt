@@ -39,12 +39,7 @@ class StreamRepository(private val context: Context, private val streamId: Strin
 
 
     init {
-        if (relayClient != null) {
-            observeMurmurRelayMessages()
-        } else {
-            observeMessages()
-        }
-
+        observeMurmurRelayMessages()
         observeMembers()
         setPresence()
         observeConnection()
@@ -55,7 +50,6 @@ class StreamRepository(private val context: Context, private val streamId: Strin
 
     // AFTER — set only `nuked`, which is permitted by your rules
     fun nukeStream(onFinished: (Boolean, String?) -> Unit) {
-
         if (BuildConfig.TEST_MODE_LOBBY && streamId == "test_lobby") {
             onFinished(false, "Test lobby can’t be deleted.")
             return
@@ -66,22 +60,16 @@ class StreamRepository(private val context: Context, private val streamId: Strin
             onFinished(false, "Not signed in")
             return
         }
-
-        // Set the ONLY flag the rules allow the creator to write
-        db.child("streams").child(streamId).child("nuked").setValue(true)
+        db.child("streams").child(streamId).child("nuked")
+            .setValue(true)
             .addOnSuccessListener {
-                // Best-effort: remove JUST my own membership (allowed by rules)
-                db.child("streams").child(streamId).child("members").child(uid)
-                    .removeValue()
-                    .addOnCompleteListener {
-                        onFinished(true, null)
-                    }
+                db.child("streams").child(streamId).child("members").child(uid).removeValue()
+                onFinished(true, null)
             }
             .addOnFailureListener { e ->
                 onFinished(false, e.message)
             }
     }
-
     fun sendMessage(msg: String) {
         if (relayClient == null) {
             Log.e("MurmurRelay", "Relay send blocked: no relay key")
@@ -94,25 +82,6 @@ class StreamRepository(private val context: Context, private val streamId: Strin
 
         db.child("streams/$streamId/lastActive")
             .setValue(com.google.firebase.database.ServerValue.TIMESTAMP)
-    }
-
-    private fun observeMessages() {
-        val ref = db.child("streams/$streamId/messages")
-        messagesListener = object : ValueEventListener {
-            override fun onDataChange(snapshot: DataSnapshot) {
-                val result = snapshot.children.mapNotNull {
-                    val raw = it.getValue<String>()
-                    raw?.let {
-                        val decrypted = CryptoUtils.decrypt(it)
-                        decrypted
-                    }
-                }
-                messages.value = result
-            }
-
-            override fun onCancelled(error: DatabaseError) {}
-        }
-        ref.addValueEventListener(messagesListener as ValueEventListener)
     }
 
     private fun observeMurmurRelayMessages() {
