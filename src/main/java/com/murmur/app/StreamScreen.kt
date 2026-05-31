@@ -263,12 +263,11 @@ fun StreamScreen(
                 streamRef.child("createdAt")
                     .setValue(com.google.firebase.database.ServerValue.TIMESTAMP)
                     .addOnSuccessListener { startInviteFlow() }
-                    .addOnFailureListener { /* optional: toast/log */ }
+                    .addOnFailureListener { }
             } else {
                 startInviteFlow()
             }
         }.addOnFailureListener {
-            // optional: toast/log
         }
     }
 
