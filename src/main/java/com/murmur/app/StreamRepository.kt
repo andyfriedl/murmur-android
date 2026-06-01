@@ -7,7 +7,6 @@ import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
 import com.google.firebase.database.database
-import com.google.firebase.database.ktx.getValue
 import kotlinx.coroutines.flow.MutableStateFlow
 import com.google.firebase.auth.FirebaseAuth
 import android.util.Log
@@ -24,15 +23,14 @@ class StreamRepository(private val context: Context, private val streamId: Strin
             )
         }
     private var membersListener: ValueEventListener? = null
+    private var streamDeletionListener: ValueEventListener? = null
+    private var nukedFlagListener: ValueEventListener? = null
     private var connectedRef: com.google.firebase.database.DatabaseReference? = null
     private var connectionListener: com.google.firebase.database.ValueEventListener? = null
-
-
 
     val isCreator = MutableStateFlow(StreamSession.isCreator(context))
     val messages = MutableStateFlow<List<String>>(emptyList())
     val memberCount = MutableStateFlow(0)
-
     val streamDeleted = MutableStateFlow(false)
 
 
@@ -43,10 +41,8 @@ class StreamRepository(private val context: Context, private val streamId: Strin
         observeConnection()
         observeStreamDeletion()
         observeNukedFlag()
-        isCreator.value = StreamSession.isCreator(context)
     }
 
-    // AFTER — set only `nuked`, which is permitted by your rules
     fun nukeStream(onFinished: (Boolean, String?) -> Unit) {
         if (BuildConfig.TEST_MODE_LOBBY && streamId == "test_lobby") {
             onFinished(false, "Test lobby can’t be deleted.")
@@ -68,6 +64,7 @@ class StreamRepository(private val context: Context, private val streamId: Strin
                 onFinished(false, e.message)
             }
     }
+
     fun sendMessage(msg: String) {
         if (relayClient == null) {
             Log.e("MurmurRelay", "Relay send blocked: no relay key")
@@ -161,7 +158,7 @@ class StreamRepository(private val context: Context, private val streamId: Strin
 
     private fun observeStreamDeletion() {
         val streamRef = db.child("streams/$streamId")
-        streamRef.addValueEventListener(object : ValueEventListener {
+        streamDeletionListener = object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
                 val exists = snapshot.exists()
                 val deleted = snapshot.child("deleted").getValue(Boolean::class.java) == true
@@ -169,13 +166,16 @@ class StreamRepository(private val context: Context, private val streamId: Strin
                     streamDeleted.value = true
                 }
             }
+
             override fun onCancelled(error: DatabaseError) {}
-        })
+        }
+
+        streamRef.addValueEventListener(streamDeletionListener as ValueEventListener)
     }
 
     private fun observeNukedFlag() {
         val nukedRef = db.child("streams/$streamId/nuked")
-        nukedRef.addValueEventListener(object : ValueEventListener {
+        nukedFlagListener = object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
                 if (snapshot.getValue(Boolean::class.java) == true) {
                     streamDeleted.value = true
@@ -183,7 +183,9 @@ class StreamRepository(private val context: Context, private val streamId: Strin
             }
 
             override fun onCancelled(error: DatabaseError) {}
-        })
+        }
+
+        nukedRef.addValueEventListener(nukedFlagListener as ValueEventListener)
     }
 
     fun refreshStreamStatus() {
@@ -206,8 +208,17 @@ class StreamRepository(private val context: Context, private val streamId: Strin
         membersListener?.let {
             db.child("streams/$streamId/members").removeEventListener(it)
         }
+
         connectionListener?.let { listener ->
             connectedRef?.removeEventListener(listener)
+        }
+
+        streamDeletionListener?.let {
+            db.child("streams/$streamId").removeEventListener(it)
+        }
+
+        nukedFlagListener?.let {
+            db.child("streams/$streamId/nuked").removeEventListener(it)
         }
     }
 
@@ -296,7 +307,7 @@ class StreamRepository(private val context: Context, private val streamId: Strin
                 .getReference("streams")
                 .child(streamId)
 
-            // Read once to check existence, pro flag, and current member count.
+            // Read once to check stream status and current member count.
             streamRef.get().addOnCompleteListener { task ->
                 val s = task.result
                 if (!task.isSuccessful || s == null || !s.exists()) {
