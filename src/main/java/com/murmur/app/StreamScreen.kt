@@ -7,7 +7,6 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -29,16 +28,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -53,7 +48,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
@@ -65,27 +59,18 @@ import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.saveable.rememberSaveable
-import java.util.concurrent.TimeUnit
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.IconButton
-import androidx.compose.foundation.shape.CircleShape // optional if you use it elsewhere
 import androidx.compose.ui.draw.clip
-import com.murmur.app.ui.theme.extraColors
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.MutableTransitionState
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -107,11 +92,7 @@ fun StreamScreen(
     var isGeneratingQR by remember { mutableStateOf(false) }
     var lastInviteId by remember { mutableStateOf<String?>(null) }
     val context = LocalContext.current
-    var showProDialog by remember { mutableStateOf(false) }
-    val isProState = remember { mutableStateOf(Upgrade.isPro(context)) }
-    val streamIsPro = remember { mutableStateOf(false) }
     val createdAt = remember { mutableStateOf<Long?>(null) }
-    val proRuleNoteSent = rememberSaveable(streamId) { mutableStateOf(false) }
     var showDeleteConfirm by remember { mutableStateOf(false) }
     var isDeleting by remember { mutableStateOf(false) }
     var showCreatorEnded by remember { mutableStateOf(false) }
@@ -220,17 +201,6 @@ fun StreamScreen(
         }
     }
 
-    LaunchedEffect(isCreator, isProState.value, isTestLobby) {
-        if (!isTestLobby && isCreator && isProState.value) {
-            com.google.firebase.database.FirebaseDatabase.getInstance()
-                .getReference("streams")
-                .child(streamId)
-                .child("pro")
-                .setValue(true)
-        }
-    }
-
-    // REPLACE your existing LaunchedEffect(isCreator, isFresh) with this:
     LaunchedEffect(isCreator, isFresh) {
         if (!isCreator) return@LaunchedEffect
 
@@ -272,28 +242,6 @@ fun StreamScreen(
     }
 
 
-
-    DisposableEffect(streamId) {
-        val ref = com.google.firebase.database.FirebaseDatabase
-            .getInstance()
-            .getReference("streams")
-            .child(streamId)
-            .child("pro")
-
-        val listener = object : com.google.firebase.database.ValueEventListener {
-            override fun onDataChange(snapshot: com.google.firebase.database.DataSnapshot) {
-                streamIsPro.value = snapshot.getValue(Boolean::class.java) == true
-            }
-            override fun onCancelled(error: com.google.firebase.database.DatabaseError) { }
-        }
-
-        ref.addValueEventListener(listener)
-
-        onDispose {
-            ref.removeEventListener(listener)
-        }
-    }
-
     DisposableEffect(streamId) {
         val ref = com.google.firebase.database.FirebaseDatabase
             .getInstance()
@@ -311,17 +259,6 @@ fun StreamScreen(
         onDispose { ref.removeEventListener(listener) }
     }
 
-    DisposableEffect(context) {
-        val sp = context.getSharedPreferences("murmur_prefs", android.content.Context.MODE_PRIVATE)
-        val listener = android.content.SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
-            if (key == "murmur_pro") {
-                isProState.value = sp.getBoolean("murmur_pro", false)
-            }
-        }
-        sp.registerOnSharedPreferenceChangeListener(listener)
-        onDispose { sp.unregisterOnSharedPreferenceChangeListener(listener) }
-    }
-
     val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
@@ -333,13 +270,6 @@ fun StreamScreen(
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
-
-    LaunchedEffect(isProState.value, showProDialog) {
-        if (isProState.value && showProDialog) {
-            showProDialog = false
-        }
-    }
-
 
     var input by remember { mutableStateOf("") }
     val listState = rememberLazyListState()
@@ -381,23 +311,6 @@ fun StreamScreen(
                                 tint = logoTint,
                                 modifier = Modifier.size(40.dp)
                             )
-                            if (streamIsPro.value) {
-                                Spacer(Modifier.width(8.dp)) // space between logo and pro label
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(
-                                        imageVector = Icons.Default.Star,
-                                        contentDescription = "Pro",
-                                        tint = MaterialTheme.extraColors.proGold,
-                                        modifier = Modifier.size(18.dp)
-                                    )
-                                    Spacer(Modifier.width(4.dp))
-                                    Text(
-                                        text = "Pro",
-                                        color = MaterialTheme.extraColors.proGold,
-                                        style = MaterialTheme.typography.labelMedium
-                                    )
-                                }
-                            }
 
                             Spacer(modifier = Modifier.width(8.dp))
                         }
@@ -481,7 +394,11 @@ fun StreamScreen(
                                             StreamRepository.createInviteId(streamId) { inviteId ->
                                                 isGeneratingQR = false
                                                 if (inviteId != null) {
-                                                    val payload = DeepLinkUtil.buildJoinQrPayload(streamId, nonce = inviteId)
+                                                    val payload = DeepLinkUtil.buildJoinQrPayload(
+                                                        streamId = streamId,
+                                                        relayKey = getOrCreateRelayKey(),
+                                                        nonce = inviteId
+                                                    )
                                                     val generated = QRCodeHelper.generateQRCode(payload)
                                                     qrBitmap = generated
                                                     lastInviteId = inviteId
@@ -567,97 +484,6 @@ fun StreamScreen(
                                 }
                                 Spacer(modifier = Modifier.height(4.dp))
 
-                                // thin divider
-                                HorizontalDivider(
-                                    thickness = 0.5.dp,
-                                    color = MaterialTheme.colorScheme.outlineVariant
-                                )
-                                if (!isTestLobby) {
-                                    if (isProState.value) {
-                                        // Show label only, no action
-                                        DropdownMenuItem(
-                                            text = {
-                                                Text(
-                                                    "Pro unlocked",
-                                                    style = MaterialTheme.typography.bodyLarge.copy(
-                                                        fontSize = 18.sp
-                                                    ),
-                                                    color = MaterialTheme.extraColors.proGold
-                                                )
-                                            },
-                                            leadingIcon = {
-                                                Icon(
-                                                    imageVector = Icons.Default.Star,
-                                                    contentDescription = "Pro",
-                                                    tint = MaterialTheme.extraColors.proGold,
-                                                    modifier = Modifier.size(24.dp)
-                                                )
-                                            },
-                                            enabled = false,        // not tappable
-                                            onClick = {}            // required param; does nothing
-                                        )
-                                    } else {
-                                        // Existing Upgrade option (clickable)
-                                        DropdownMenuItem(
-                                            text = {
-                                                Text(
-                                                    "Upgrade to Pro",
-                                                    style = MaterialTheme.typography.bodyLarge.copy(
-                                                        fontSize = 18.sp
-                                                    ),
-                                                    color = MaterialTheme.extraColors.proGold
-                                                )
-                                            },
-                                            leadingIcon = {
-                                                Icon(
-                                                    imageVector = Icons.Default.Star,
-                                                    contentDescription = "Pro",
-                                                    tint = MaterialTheme.extraColors.proGold,
-                                                    modifier = Modifier.size(24.dp)
-                                                )
-                                            },
-                                            onClick = {
-                                                expanded = false
-                                                showProDialog = true
-                                            }
-                                        )
-                                    }
-                                }
-
-                                Spacer(modifier = Modifier.height(4.dp))
-
-
-                                if (BuildConfig.IS_DEV) {
-                                    val proState = remember { mutableStateOf(Upgrade.isPro(context)) }
-
-                                    DropdownMenuItem(
-                                        text = { Text(if (proState.value) "Switch to Free (test)" else "Unlock Pro (test)") },
-                                        onClick = {
-                                            val newValue = !proState.value
-
-                                            Upgrade.setPro(context, newValue)
-                                            proState.value = newValue
-                                            isProState.value = newValue
-
-                                            if (isCreator) {
-                                                val ref =
-                                                    com.google.firebase.database.FirebaseDatabase.getInstance()
-                                                        .getReference("streams")
-                                                        .child(streamId)
-                                                        .child("pro")
-                                                if (newValue) ref.setValue(true) else ref.removeValue()
-                                            }
-
-                                            android.widget.Toast.makeText(
-                                                context,
-                                                if (newValue) "Pro enabled (test)" else "Pro disabled (test)",
-                                                android.widget.Toast.LENGTH_SHORT
-                                            ).show()
-
-                                            expanded = false
-                                        }
-                                    )
-                                }
 
 
                             }
@@ -665,21 +491,6 @@ fun StreamScreen(
 
 
                     }
-                }
-
-                if (showProDialog) {
-                    val activity = (LocalContext.current as? Activity)
-                    ProDialog(
-                        isPro = isProState.value,
-                        onDismiss = { showProDialog = false },
-                        onBuy = {
-                            activity?.let {
-                                BillingHelper.buyPro(it) { err ->
-                                    android.widget.Toast.makeText(it, err, android.widget.Toast.LENGTH_SHORT).show()
-                                }
-                            }
-                        }
-                    )
                 }
 
 
@@ -787,59 +598,9 @@ fun StreamScreen(
                             .padding(end = 12.dp, bottom = 4.dp)
                     )
 
-                    // 1) Compute limits and any Free restrictions (goes RIGHT AFTER the character-count Text)
-                    val limit = if (streamIsPro.value) {
-                        UpgradeConfig.PRO_STREAM_MESSAGE_LIMIT
-                    } else {
-                        UpgradeConfig.FREE_STREAM_MESSAGE_LIMIT
-                    }
+                    val messageLimit = StreamConfig.MESSAGE_LIMIT
+                    val canSend = input.isNotBlank() && messages.size < messageLimit
 
-                    val streamExpired = !isTestLobby && !streamIsPro.value &&
-                            (createdAt.value?.let { created ->
-                                val ageMs = System.currentTimeMillis() - created
-                                ageMs > TimeUnit.DAYS.toMillis(UpgradeConfig.FREE_STREAM_MAX_INACTIVITY_DAYS.toLong())
-                            } ?: false)
-
-                    val messageCapReached = !isTestLobby && !streamIsPro.value && messages.size >= limit
-
-
-                    val freeRestrictionReason: String? = when {
-                        streamExpired && isCreator ->
-                            "This free stream expired. Upgrade to Pro to keep it alive and remove limits."
-                        streamExpired && !isCreator ->
-                            "This free stream expired. Only the creator can upgrade to Pro to keep chatting."
-                        messageCapReached && isCreator ->
-                            "Free message limit reached. Upgrade to Pro to continue the conversation."
-                        messageCapReached && !isCreator ->
-                            "Free message limit reached. Only the creator can upgrade this stream to Pro."
-                        else -> null
-                    }
-                    if (!isTestLobby) {
-                        if (freeRestrictionReason != null && !streamIsPro.value && !proRuleNoteSent.value) {
-                            // Visible to everyone in the stream
-                            viewModel.sendMessage(
-                                "*** Murmur System Warning! *** \n Only the creator can upgrade this stream to Pro. " +
-                                        "Buying Pro as a joiner only unlocks streams you create. " +
-                                        "Ask the creator to upgrade to keep chatting."
-                            )
-                            proRuleNoteSent.value = true
-                        }
-
-                    }
-
-                    val canSend = input.isNotBlank() && messages.size < limit && freeRestrictionReason == null
-
-// 2) Show one banner if any Free restriction is active
-                    // 2) Show one banner if any Free restriction is active
-                    freeRestrictionReason?.let { msg ->
-                        UpsellBanner(
-                            message = msg,
-                            showUpgrade = isCreator,             // only the host sees the Upgrade CTA
-                            onUpgrade = { showProDialog = true } // opens the Pro dialog
-                        )
-                    }
-
-// 3) Normal Row with input and send button
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -1084,96 +845,6 @@ fun DevBadge(show: Boolean) {
             color = Color.White,
             style = MaterialTheme.typography.labelLarge
         )
-    }
-}
-
-@Composable
-fun ProDialog(
-    isPro: Boolean,
-    onDismiss: () -> Unit,
-    onBuy: () -> Unit,
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        confirmButton = {
-            if (isPro) {
-                Button(onClick = onDismiss) { Text("Done") }
-            } else {
-                Button(onClick = onBuy) { Text("Upgrade Now") }
-            }
-        },
-        dismissButton = {
-            if (!isPro) {
-                OutlinedButton(onClick = onDismiss) { Text("Close") }
-            }
-        },
-        title = {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    imageVector = Icons.Default.Star,
-                    contentDescription = null,
-                    tint = MaterialTheme.extraColors.proGold,
-                    modifier = Modifier.size(22.dp)
-                )
-                Spacer(Modifier.width(8.dp))
-                Text(if (isPro) "Murmur Pro — Active" else "Upgrade to Murmur Pro")
-            }
-        },
-        text = {
-            Column {
-                if (isPro) {
-                    Text("Thanks for supporting Murmur! Pro is unlocked on this device.")
-                } else {
-                    Text("Unlock Pro to get:")
-                    Spacer(Modifier.height(8.dp))
-                    Text("• More messages per stream")
-                    Text("• Longer stream life")
-                    Text("• Clear messages / keep stream")
-                    Spacer(Modifier.height(12.dp))
-                    Text("One‑time purchase. No account needed.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-            }
-        }
-    )
-}
-
-@Composable
-private fun UpsellBanner(
-    message: String,
-    showUpgrade: Boolean,
-    onUpgrade: () -> Unit
-) {
-    Surface(
-        tonalElevation = 1.dp,
-        color = MaterialTheme.colorScheme.errorContainer,
-        shape = RoundedCornerShape(10.dp),
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 8.dp, vertical = 8.dp)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 10.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = message,
-                color = MaterialTheme.colorScheme.onErrorContainer,
-                style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.weight(1f)
-            )
-            if (showUpgrade) {
-                Spacer(Modifier.width(8.dp))
-                OutlinedButton(
-                    onClick = onUpgrade,
-                    shape = RoundedCornerShape(8.dp),
-                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
-                ) {
-                    Text("Upgrade")
-                }
-            }
-        }
     }
 }
 

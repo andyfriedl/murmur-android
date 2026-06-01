@@ -311,13 +311,12 @@ class StreamRepository(private val context: Context, private val streamId: Strin
                     return@addOnCompleteListener
                 }
 
-                val pro = s.child("pro").getValue(Boolean::class.java) == true
                 val membersSnap = s.child("members")
                 val alreadyMember = membersSnap.hasChild(uid)
                 val currentCount = membersSnap.childrenCount.toInt()
 
-                if (!pro && !alreadyMember && currentCount >= UpgradeConfig.FREE_STREAM_MEMBER_LIMIT) {
-                    onResult(false, "This free stream is full.")
+                if (!alreadyMember && currentCount >= StreamConfig.MEMBER_LIMIT) {
+                    onResult(false, "This stream is full.")
                     return@addOnCompleteListener
                 }
 

@@ -42,7 +42,7 @@ android {
         create("prod") {
             dimension = "env"
             buildConfigField("boolean", "IS_DEV", "false")
-            buildConfigField("boolean", "TEST_MODE_LOBBY", "true") // ←  testing build
+            buildConfigField("boolean", "TEST_MODE_LOBBY", "false") // ←  testing build
         }
     }
 

@@ -103,9 +103,6 @@ class MainActivity : ComponentActivity() {
             getSharedPreferences("ui_prefs", MODE_PRIVATE).edit().putBoolean("dev_indicator", false).apply()
         }
 
-        BillingHelper.init(applicationContext)
-        BillingHelper.queryProductDetails(listOf("pro_upgrade1"))
-
         // Deep link: capture sid from murmur://join?sid=...
         val incomingSid = intent?.data?.getQueryParameter("sid")
         val incomingRelayKey = intent?.data?.getQueryParameter("rk")
@@ -218,23 +215,6 @@ fun StartScreen(
         )
     }
 
-    // Device-level Pro entitlement for Start screen
-    val deviceIsPro = remember { mutableStateOf(Upgrade.isPro(context)) }
-
-// Keep badge in sync if user buys Pro while StartScreen is visible
-    DisposableEffect(Unit) {
-        val prefs = context.getSharedPreferences("murmur_prefs", android.content.Context.MODE_PRIVATE)
-        val listener = android.content.SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
-            if (key == "murmur_pro") {
-                deviceIsPro.value = Upgrade.isPro(context)
-            }
-        }
-        prefs.registerOnSharedPreferenceChangeListener(listener)
-        onDispose { prefs.unregisterOnSharedPreferenceChangeListener(listener) }
-    }
-
-
-
     Box(modifier = Modifier.fillMaxSize()) {
         Column(
             modifier = Modifier
@@ -276,27 +256,6 @@ fun StartScreen(
                         softWrap = false
                     )
 
-                    if (deviceIsPro.value) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier
-                                .align(Alignment.TopEnd)
-                                .offset(x = 0.dp, y = (-6).dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Star,
-                                contentDescription = "Pro",
-                                tint = MaterialTheme.extraColors.proGold,
-                                modifier = Modifier.size(18.dp)
-                            )
-                            Spacer(Modifier.width(4.dp))
-                            Text(
-                                text = "Pro",
-                                color = MaterialTheme.extraColors.proGold,
-                                style = MaterialTheme.typography.labelMedium
-                            )
-                        }
-                    }
                 }
             }
 
@@ -393,50 +352,6 @@ fun StartScreen(
                     Text(if (BuildConfig.TEST_MODE_LOBBY) "Join Test Lobby" else "Create Stream")                }
             }
 
-            var showProDialog by remember { mutableStateOf(false) }
-            val activity = LocalContext.current as? Activity
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            if (!deviceIsPro.value) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .wrapContentWidth(Alignment.CenterHorizontally)
-                        .clickable { showProDialog = true },
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Star,
-                        contentDescription = "Upgrade to Pro",
-                        tint = MaterialTheme.extraColors.proGold,
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Spacer(Modifier.width(6.dp))
-                    Text(
-                        text = "Upgrade to Pro",
-                        style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.extraColors.proGold
-                    )
-                }
-
-
-                // Show an upgrade hint under the Create button (only if not Pro yet)
-                if (showProDialog) {
-                    ProDialog(
-                        isPro = deviceIsPro.value,
-                        onDismiss = { showProDialog = false },
-                        onBuy = {
-                            activity?.let { act ->
-                                BillingHelper.buyPro(act) { err ->
-                                    Toast.makeText(act, err, Toast.LENGTH_SHORT).show()
-                                }
-                            }
-                        }
-                    )
-                }
-            }
-
             Spacer(modifier = Modifier.height(32.dp))
 
 
@@ -522,19 +437,6 @@ fun StartScreen(
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         val context = LocalContext.current
-
-                        val deviceIsPro = remember { mutableStateOf(Upgrade.isPro(context)) }
-
-                        DisposableEffect(context) {
-                            val sp = context.getSharedPreferences("murmur_prefs", android.content.Context.MODE_PRIVATE)
-                            val listener = android.content.SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
-                                if (key == "murmur_pro") {
-                                    deviceIsPro.value = sp.getBoolean("murmur_pro", false)
-                                }
-                            }
-                            sp.registerOnSharedPreferenceChangeListener(listener)
-                            onDispose { sp.unregisterOnSharedPreferenceChangeListener(listener) }
-                        }
 
                         Text(
                             text = if (isCreator) "You're already hosting a stream." else "You're already in a stream.",
