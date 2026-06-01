@@ -4,7 +4,13 @@ import LoadingOverlay
 import android.app.Activity
 import android.graphics.Bitmap
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.MutableTransitionState
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -22,7 +28,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
@@ -32,7 +40,10 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -40,6 +51,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -48,35 +60,23 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.isActive
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.FilledIconButton
-import androidx.compose.material3.IconButtonDefaults
-import androidx.compose.material3.IconButton
-import androidx.compose.ui.draw.clip
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.foundation.lazy.items
-import androidx.compose.animation.core.MutableTransitionState
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.murmur.app.ui.StreamNoticeDialog
 import com.murmurrelay.core.MurmurRelay
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 
 
 @Composable
@@ -85,7 +85,6 @@ fun StreamScreen(
     onLeaveStream: () -> Unit,
     isFresh: Boolean = false
 ) {
-
 
     var showQR by remember { mutableStateOf(false) }
     var qrBitmap by remember { mutableStateOf<Bitmap?>(null) }
@@ -97,9 +96,6 @@ fun StreamScreen(
     var isDeleting by remember { mutableStateOf(false) }
     var showCreatorEnded by remember { mutableStateOf(false) }
 
-
-
-
     val devIndicator = remember {
         mutableStateOf(
             if (BuildConfig.IS_DEV)
@@ -108,7 +104,6 @@ fun StreamScreen(
             else false
         )
     }
-
 
     val inStream = StreamSession.getStreamId(context).isNullOrBlank().not()
 
@@ -126,6 +121,7 @@ fun StreamScreen(
     val activeStreamId = remember {
         streamId ?: StreamSession.getOrCreateStreamId(context)
     }
+
     val viewModel = remember(context, activeStreamId) {
         StreamViewModel(context, activeStreamId)
     }
@@ -146,7 +142,6 @@ fun StreamScreen(
         }
     }
 
-
     val shouldLeave by viewModel.shouldLeaveStream.collectAsState()
     LaunchedEffect(shouldLeave) {
         if (shouldLeave) {
@@ -157,7 +152,6 @@ fun StreamScreen(
     val messages by viewModel.messages.collectAsState()
     val memberCount by viewModel.memberCount.collectAsState()
 
-    // Defensive: if the stream is flagged deleted or removed, leave immediately.
     val kicked = remember { mutableStateOf(false) }
     val ctx = LocalContext.current
 
@@ -191,7 +185,6 @@ fun StreamScreen(
         onDispose { ref.removeEventListener(listener) }
     }
 
-
     LaunchedEffect(memberCount) {
         if (isCreator && showQR && memberCount > 1) {
             showQR = false
@@ -208,7 +201,6 @@ fun StreamScreen(
             .getReference("streams")
             .child(streamId)
 
-        // Ensure the stream node exists and has createdAt BEFORE generating the invite
         streamRef.child("createdAt").get().addOnSuccessListener { snap ->
             fun startInviteFlow() {
                 if (isFresh) {
@@ -240,7 +232,6 @@ fun StreamScreen(
         }.addOnFailureListener {
         }
     }
-
 
     DisposableEffect(streamId) {
         val ref = com.google.firebase.database.FirebaseDatabase
@@ -315,13 +306,10 @@ fun StreamScreen(
                             Spacer(modifier = Modifier.width(8.dp))
                         }
 
-                        // Delete / Leave button
                         var expanded by remember { mutableStateOf(false) }
-//                        var isDeleting by remember { mutableStateOf(false) }
                         val showRedDot = remember { mutableStateOf(UiPrefs.shouldShowRedDot(context)) }
 
                         Box {
-                            // subtle “pop” + icon twist when the menu opens
                             val openScale by animateFloatAsState(
                                 targetValue = if (expanded) 1f else 0.96f,
                                 animationSpec = spring(dampingRatio = 0.6f, stiffness = 500f)
@@ -365,8 +353,6 @@ fun StreamScreen(
                                 }
                             }
 
-
-
                             DropdownMenu(
                                 expanded = expanded,
                                 onDismissRequest = { expanded = false },
@@ -409,8 +395,6 @@ fun StreamScreen(
                                     )
                                 }
 
-
-
                                 Spacer(modifier = Modifier.height(4.dp))
 
                                 val redStyle = MaterialTheme.typography.bodyLarge.copy(
@@ -427,7 +411,6 @@ fun StreamScreen(
                                         modifier = Modifier.size(24.dp)
                                     )
                                 }
-
 
                                 if (effectiveIsCreator) {
                                     DropdownMenuItem(
@@ -463,10 +446,6 @@ fun StreamScreen(
                                             isDeleting = false
                                             showDeleteConfirm = true
                                         }
-
-
-
-
                                     )
                                 }
                                 else {
@@ -484,15 +463,11 @@ fun StreamScreen(
                                 }
                                 Spacer(modifier = Modifier.height(4.dp))
 
-
-
                             }
                         }
 
-
                     }
                 }
-
 
                 Text(
                     text = "$memberCount in stream",
@@ -511,7 +486,7 @@ fun StreamScreen(
                                 .fillMaxWidth()
                                 .padding(horizontal = 12.dp, vertical = 8.dp)
                         ) {
-                            // Build a stable (id, message) list, then reverse for bottom-anchored UI
+
                             val itemsForUi = remember(messages) {
                                 messages.mapIndexed { id, msg -> id to msg }.asReversed()
                             }
@@ -537,7 +512,7 @@ fun StreamScreen(
                                         items = itemsForUi,
                                         key = { it.first }                     // stable key = original index
                                     ) { (id, msg) ->
-                                        // Per-item enter animation trigger
+
                                         val appear = remember(id) { MutableTransitionState(false) }
                                         LaunchedEffect(id) { appear.targetState = true }
 
@@ -572,13 +547,6 @@ fun StreamScreen(
                             }
                         }
 
-
-
-
-
-
-
-
                 Spacer(modifier = Modifier.height(16.dp)) // reduce vertical gap above input
 
                 Column(
@@ -587,9 +555,8 @@ fun StreamScreen(
                         .padding(bottom = 24.dp)
                 ) {
 
-                    // Character count above input field
                     Text(
-                        text = "${input.length}/400",
+                        text = "${input.length}/${StreamConfig.MESSAGE_LIMIT}",
                         color = if (input.length >= 400) Color.Red else MaterialTheme.colorScheme.onSurfaceVariant,
                         style = MaterialTheme.typography.labelSmall,
                         modifier = Modifier
@@ -607,7 +574,7 @@ fun StreamScreen(
                     ) {
                         TextField(
                             value = input,
-                            onValueChange = { if (it.length <= 400) input = it },
+                            onValueChange = { if (it.length <= StreamConfig.MESSAGE_LIMIT) input = it },
                             modifier = Modifier.weight(1f),
                             placeholder = {
                                 Text(
@@ -649,9 +616,8 @@ fun StreamScreen(
                                 disabledContainerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.55f),
                                 disabledContentColor   = MaterialTheme.colorScheme.onPrimaryContainer//.copy(alpha = 0.65f)
                             )
-
                         ) {
-                            // slight optical nudge because the send glyph is asymmetric
+                            // slight nudge because the send icon is asymmetric
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.Send,
                                 contentDescription = "Send",
@@ -659,15 +625,10 @@ fun StreamScreen(
                                 else Modifier.size(24.dp).offset(x = (-0.5).dp)
                             )
                         }
-
                     }
-
                 }
-
-
             }
 
-            // ---- replace your two LoadingOverlay(...) calls with this ----
             val showSetupRaw = isFresh && isCreator && createdAt.value == null
             var allowSetup by remember { mutableStateOf(false) }
 
@@ -700,12 +661,7 @@ fun StreamScreen(
                 visible = isGeneratingQR && allowQR,
                 message = "Generating invite…"
             )
-// ---- end replacement ----
-
-
-
         }
-
 
         LaunchedEffect(showQR) {
 
@@ -737,7 +693,6 @@ fun StreamScreen(
             }
         }
 
-
         if (isCreator && showDeleteConfirm) {
             StreamNoticeDialog(
                 title = "End this stream?",
@@ -756,7 +711,6 @@ fun StreamScreen(
             )
         }
 
-        // Joiner notice when the creator ends the stream
         if (!isCreator && showCreatorEnded) {
             StreamNoticeDialog(
                 title = "Stream ended",
@@ -774,8 +728,6 @@ fun StreamScreen(
                 }
             )
         }
-
-
 
         if (showQR) {
             AlertDialog(
@@ -825,7 +777,6 @@ fun StreamScreen(
                 containerColor = MaterialTheme.colorScheme.surface
             )
         }
-
     }
 }
 
@@ -848,21 +799,4 @@ fun DevBadge(show: Boolean) {
     }
 }
 
-@Composable
-private fun StreamNoticeDialog(
-    title: String,
-    message: String,
-    confirmLabel: String,
-    onConfirm: () -> Unit,
-    onDismiss: () -> Unit = onConfirm
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        confirmButton = {
-            Button(onClick = onConfirm) { Text(confirmLabel) }
-        },
-        title = { Text(title) },
-        text = { Text(message) }
-    )
-}
 

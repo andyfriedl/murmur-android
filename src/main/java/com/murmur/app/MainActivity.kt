@@ -1,16 +1,22 @@
 package com.murmur.app
 
 import AppNavHost
+import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
-import androidx.activity.compose.BackHandler
+import android.widget.Toast
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -21,53 +27,40 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.outlined.QrCode
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.navigation.compose.rememberNavController
-import com.murmur.app.ui.theme.AppTheme
-import com.google.firebase.auth.FirebaseAuth
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.Surface
-import android.app.Activity
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.filled.Warning
-import androidx.compose.material.icons.outlined.QrCode
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.ui.text.font.FontWeight
 import androidx.navigation.NavController
+import androidx.navigation.compose.rememberNavController
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.FirebaseDatabase
-import androidx.compose.runtime.DisposableEffect
-import com.murmur.app.ui.theme.extraColors
-import androidx.compose.foundation.clickable
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.platform.LocalContext
-import android.widget.Toast
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.ui.platform.LocalConfiguration
+import com.murmur.app.ui.StreamNoticeDialog
+import com.murmur.app.ui.theme.AppTheme
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
-import com.murmur.app.ui.StreamNoticeDialog
 
 data class PendingJoin(
     val sid: String,
@@ -82,7 +75,6 @@ object DeepLinkBus {
         _events.tryEmit(PendingJoin(sid, relayKey))
     }
 }
-
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -103,7 +95,6 @@ class MainActivity : ComponentActivity() {
             getSharedPreferences("ui_prefs", MODE_PRIVATE).edit().putBoolean("dev_indicator", false).apply()
         }
 
-        // Deep link: capture sid from murmur://join?sid=...
         val incomingSid = intent?.data?.getQueryParameter("sid")
         val incomingRelayKey = intent?.data?.getQueryParameter("rk")
 
@@ -120,8 +111,6 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             AppTheme(dynamicColor = false) {
-
-                // create navController first so it's available everywhere in this scope
                 val navController = rememberNavController()
                 val ctx = LocalContext.current
 
@@ -130,7 +119,6 @@ class MainActivity : ComponentActivity() {
                     val prefs = ctx.getSharedPreferences("deeplinks", android.content.Context.MODE_PRIVATE)
                     val sid = prefs.getString("pending_join_sid", null)
                     if (!sid.isNullOrBlank()) {
-                        // clear first to avoid loops
                         prefs.edit().remove("pending_join_sid").apply()
 
                         StreamRepository.tryJoinStream(ctx, sid) { success, message ->
@@ -147,7 +135,6 @@ class MainActivity : ComponentActivity() {
                     }
                 }
 
-                // Warm-start: react to new sid events while the activity is alive
                 LaunchedEffect(Unit) {
                     DeepLinkBus.events.collect { pendingJoin ->
                         pendingJoin.relayKey?.let { relayKey ->
@@ -168,11 +155,9 @@ class MainActivity : ComponentActivity() {
                     }
                 }
 
-
                 AppNavHost(navController = navController)
             }
         }
-
     }
 
     override fun onNewIntent(intent: Intent?) {
@@ -187,8 +172,6 @@ class MainActivity : ComponentActivity() {
         }
     }
 }
-
-
 
 @Composable
 fun StartScreen(
@@ -255,12 +238,8 @@ fun StartScreen(
                         maxLines = 1,
                         softWrap = false
                     )
-
                 }
             }
-
-
-
 
             Spacer(modifier = Modifier.height(5.dp))
 
@@ -271,10 +250,8 @@ fun StartScreen(
                 color = MaterialTheme.colorScheme.onBackground
             )
 
-
             Spacer(modifier = Modifier.height(62.dp))
 
-            // Scan to Join (always visible now)
             val launcher = rememberLauncherForActivityResult(
                 contract = ActivityResultContracts.StartActivityForResult()
             ) { result ->
@@ -298,6 +275,7 @@ fun StartScreen(
                     }
                 }
             }
+
             if (!BuildConfig.TEST_MODE_LOBBY) {
                 Button(
                     onClick = {
@@ -348,15 +326,12 @@ fun StartScreen(
                         modifier = Modifier.size(20.dp)
                     )
                     Spacer(Modifier.width(8.dp))
-//                    Text("Create Stream")
                     Text(if (BuildConfig.TEST_MODE_LOBBY) "Join Test Lobby" else "Create Stream")                }
             }
 
             Spacer(modifier = Modifier.height(32.dp))
 
-
             if (BuildConfig.IS_DEV) {
-//                Spacer(modifier = Modifier.height(12.dp))
 
                 androidx.compose.material3.TextButton(
                     onClick = {
@@ -373,11 +348,7 @@ fun StartScreen(
                 ) {
                     Text(if (devIndicator.value) "DEV MODE" else "PROD MODE")
                 }
-
-//                Spacer(modifier = Modifier.height(62.dp))
             }
-
-
 
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -403,8 +374,8 @@ fun StartScreen(
                     }
                 }
             }
-            Spacer(modifier = Modifier.height(32.dp))
 
+            Spacer(modifier = Modifier.height(32.dp))
 
             Text(
                 text = "No personal data is saved or connected to your activity.",
@@ -415,8 +386,6 @@ fun StartScreen(
             )
         }
 
-        // Only show Rejoin/Delete popup if stream exists
-        // Only show Rejoin/Leave/Delete popup if stream exists
         if (streamId != null) {
             Box(
                 modifier = Modifier
@@ -458,7 +427,6 @@ fun StartScreen(
                         )
                         Spacer(modifier = Modifier.height(24.dp))
 
-                        // Rejoin Button
                         Button(
                             onClick = {
                                 navController.navigate("stream/$streamId")
@@ -534,18 +502,13 @@ fun StartScreen(
                             )
                         }
 
-
-
                         Spacer(modifier = Modifier.height(24.dp))
-
-
 
                     }
                 }
             }
         }
 
-        // Creator delete confirmation dialog
         if (isCreator && showCreatorDeleteConfirm && streamId != null) {
             StreamNoticeDialog(
                 title = "Delete your stream?",
@@ -562,11 +525,7 @@ fun StartScreen(
                 onDismiss = { showCreatorDeleteConfirm = false }
             )
         }
-
-
     }
-
-
 }
 
 
