@@ -1,6 +1,5 @@
 package com.murmur.app
 
-import AppNavHost
 import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
@@ -460,13 +459,13 @@ fun StartScreen(
                                 if (isCreator) {
                                     showCreatorDeleteConfirm = true
                                 } else {
-                                    val deviceId = StreamSession.getDeviceId(context)
-                                    if (!deviceId.isNullOrBlank()) {
+                                    val uid = FirebaseAuth.getInstance().currentUser?.uid
+                                    if (!uid.isNullOrBlank()) {
                                         FirebaseDatabase.getInstance()
                                             .getReference("streams")
                                             .child(streamId)
                                             .child("members")
-                                            .child(deviceId)
+                                            .child(uid)
                                             .removeValue()
                                             .addOnCompleteListener {
                                                 StreamSession.clearStreamId(context)
