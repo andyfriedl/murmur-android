@@ -80,13 +80,6 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         FirebaseAuth.getInstance().signInAnonymously()
-            .addOnCompleteListener { task ->
-                if (task.isSuccessful) {
-                    println("✅ Signed in anonymously: ${task.result?.user?.uid}")
-                } else {
-                    println("❌ Anonymous sign-in failed: ${task.exception?.message}")
-                }
-            }
 
         enableEdgeToEdge()
 
@@ -113,7 +106,6 @@ class MainActivity : ComponentActivity() {
                 val navController = rememberNavController()
                 val ctx = LocalContext.current
 
-                // Deep link: act on pending SID once after composition starts (cold start path)
                 LaunchedEffect(Unit) {
                     val prefs = ctx.getSharedPreferences("deeplinks", android.content.Context.MODE_PRIVATE)
                     val sid = prefs.getString("pending_join_sid", null)
@@ -126,8 +118,8 @@ class MainActivity : ComponentActivity() {
                                     navController.navigate("stream/$sid")
                                 }
                             } else {
-                                android.widget.Toast
-                                    .makeText(ctx, message ?: "Could not join stream.", android.widget.Toast.LENGTH_SHORT)
+                                Toast
+                                    .makeText(ctx, message ?: "Could not join stream.", Toast.LENGTH_SHORT)
                                     .show()
                             }
                         }
@@ -146,8 +138,8 @@ class MainActivity : ComponentActivity() {
                                     navController.navigate("stream/${pendingJoin.sid}")
                                 }
                             } else {
-                                android.widget.Toast
-                                    .makeText(ctx, message ?: "Could not join stream.", android.widget.Toast.LENGTH_SHORT)
+                                Toast
+                                    .makeText(ctx, message ?: "Could not join stream.", Toast.LENGTH_SHORT)
                                     .show()
                             }
                         }
@@ -161,9 +153,8 @@ class MainActivity : ComponentActivity() {
 
     override fun onNewIntent(intent: Intent?) {
         super.onNewIntent(intent)
-        setIntent(intent) // keep getIntent() in sync with the latest
+        setIntent(intent)
 
-        // Warm-start deep link handling: murmur://join?sid=...
         val sid = intent?.data?.getQueryParameter("sid")
         if (!sid.isNullOrBlank()) {
             val relayKey = intent?.data?.getQueryParameter("rk")
@@ -182,7 +173,6 @@ fun StartScreen(
     val isCreator = StreamSession.isCreator(context)
     val streamId = StreamSession.getStreamId(context)
     var showCreatorDeleteConfirm by remember { mutableStateOf(false) }
-
 
     BackHandler(enabled = true) {
         (context as? Activity)?.finish()
@@ -206,14 +196,14 @@ fun StartScreen(
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Header (shrink-only based on screen width)
+
             val logoTint = if (BuildConfig.IS_DEV && devIndicator.value) Color.Red else MaterialTheme.colorScheme.primary
             val screenWidthDp = androidx.compose.ui.platform.LocalConfiguration.current.screenWidthDp
 
             val (logoSize, fontSizeSp) = when {
-                screenWidthDp <= 340 -> 48.dp to 36.sp   // very narrow phones
-                screenWidthDp <= 380 -> 56.dp to 44.sp   // small phones
-                else                 -> 64.dp to 52.sp   // default / max
+                screenWidthDp <= 340 -> 48.dp to 36.sp
+                screenWidthDp <= 380 -> 56.dp to 44.sp
+                else                 -> 64.dp to 52.sp
             }
 
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -266,8 +256,8 @@ fun StartScreen(
                             if (success) {
                                 onJoinStream(scannedId)
                             } else {
-                                android.widget.Toast
-                                    .makeText(context, message ?: "Could not join stream.", android.widget.Toast.LENGTH_SHORT)
+                                Toast
+                                    .makeText(context, message ?: "Could not join stream.", Toast.LENGTH_SHORT)
                                     .show()
                             }
                         }
@@ -293,7 +283,7 @@ fun StartScreen(
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(
-                            imageVector = Icons.Outlined.QrCode, // small QR icon
+                            imageVector = Icons.Outlined.QrCode,
                             contentDescription = "Scan QR",
                             modifier = Modifier.size(20.dp)
                         )
@@ -305,7 +295,6 @@ fun StartScreen(
 
             Spacer(modifier = Modifier.height(22.dp))
 
-            // Create Stream
             OutlinedButton(
                 onClick = onCreateStream,
                 modifier = Modifier
@@ -320,7 +309,7 @@ fun StartScreen(
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
-                        painter = painterResource(id = R.drawable.murmur_logo), // your logo
+                        painter = painterResource(id = R.drawable.murmur_logo),
                         contentDescription = "murmur logo",
                         modifier = Modifier.size(20.dp)
                     )
@@ -409,7 +398,7 @@ fun StartScreen(
                         Text(
                             text = if (isCreator) "You're already hosting a stream." else "You're already in a stream.",
                             style = MaterialTheme.typography.titleLarge,
-                            textAlign = TextAlign.Start,          // RTL-aware "left"
+                            textAlign = TextAlign.Start,
                             modifier = Modifier.fillMaxWidth(),
                             color = MaterialTheme.colorScheme.onSurface
                         )
@@ -421,8 +410,8 @@ fun StartScreen(
                                 "You must leave your stream before creating or joining a new one.",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurface,
-                            textAlign = TextAlign.Start,          // RTL-aware "left"
-                            modifier = Modifier.fillMaxWidth()    // let it align to the start edge
+                            textAlign = TextAlign.Start,
+                            modifier = Modifier.fillMaxWidth()
                         )
                         Spacer(modifier = Modifier.height(24.dp))
 
@@ -516,6 +505,7 @@ fun StartScreen(
                 onConfirm = {
                     val repo = StreamRepository(context, streamId)
                     repo.nukeStream { _, _ ->
+                        repo.clear()
                         showCreatorDeleteConfirm = false
                         StreamSession.clearStreamId(context)
                         navController.navigate("start")
