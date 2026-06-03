@@ -8,7 +8,8 @@ import java.util.UUID
 object StreamSession {
     private const val PREF_NAME = "stream_prefs"
     private const val KEY_STREAM_ID = "stream_id"
-
+    private const val KEY_IS_CREATOR = "is_creator"
+    private const val KEY_CREATOR_STREAM = "creator_stream"
     private const val KEY_RELAY_CHANNEL_KEY = "relay_channel_key"
 
     fun getOrCreateStreamId(context: Context): String {
@@ -39,22 +40,24 @@ object StreamSession {
         prefs.edit()
             .remove(KEY_STREAM_ID)
             .remove(KEY_RELAY_CHANNEL_KEY)
+            .remove(KEY_IS_CREATOR)
+            .remove(KEY_CREATOR_STREAM)
             .apply()
     }
 
     fun setIsCreator(context: Context, value: Boolean) {
         val prefs = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
-        prefs.edit().putBoolean("is_creator", value).apply()
+        prefs.edit().putBoolean(KEY_IS_CREATOR, value).apply()
     }
 
     fun setCreatorId(context: Context, streamId: String) {
         val prefs = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
-        prefs.edit().putString("creator_stream", streamId).apply()
+        prefs.edit().putString(KEY_CREATOR_STREAM, streamId).apply()
     }
 
     fun isCreator(context: Context): Boolean {
         val prefs = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
-        return prefs.getBoolean("is_creator", false)
+        return prefs.getBoolean(KEY_IS_CREATOR, false)
     }
 
     fun getDeviceId(context: Context): String? {
