@@ -2,7 +2,6 @@ package com.murmur.app
 
 import android.content.Context
 import android.content.SharedPreferences
-import com.google.firebase.auth.FirebaseAuth
 import java.util.UUID
 
 object StreamSession {
@@ -58,10 +57,6 @@ object StreamSession {
     fun isCreator(context: Context): Boolean {
         val prefs = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
         return prefs.getBoolean(KEY_IS_CREATOR, false)
-    }
-
-    fun getDeviceId(context: Context): String? {
-        return FirebaseAuth.getInstance().currentUser?.uid
     }
 
     fun setRelayChannelKey(context: Context, key: String) {
