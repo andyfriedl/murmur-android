@@ -19,7 +19,9 @@ object DeepLinkUtil {
             "&n=" + URLEncoder.encode(it, "UTF-8")
         } ?: ""
 
-        return "intent://join?sid=$streamId$relayKeyParam$nonceParam#Intent;" +
+        val encodedStreamId = URLEncoder.encode(streamId, "UTF-8")
+
+        return "intent://join?sid=$encodedStreamId$relayKeyParam$nonceParam#Intent;" +
                 "scheme=murmur;" +
                 "package=${BuildConfig.APPLICATION_ID};" +
                 "S.browser_fallback_url=$encodedPlay;" +
