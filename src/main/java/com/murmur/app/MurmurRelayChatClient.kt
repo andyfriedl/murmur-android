@@ -1,9 +1,7 @@
 package com.murmur.app
 
-import com.google.firebase.database.DatabaseReference
 import com.murmurrelay.core.MurmurRelay
 import com.murmurrelay.core.MurmurRelayResult
-import com.murmurrelay.core.transport.InMemoryRelayTransport
 import com.murmurrelay.core.transport.RelayTransport
 
 class MurmurRelayChatClient(
@@ -12,10 +10,6 @@ class MurmurRelayChatClient(
     transport: RelayTransport
 ) {
     private val relay = MurmurRelay(transport)
-
-    fun getChannelId(): String = channelId
-
-    fun getChannelKeyLength(): Int = channelKey.length
 
     fun sendMessage(
         message: String,
@@ -35,7 +29,8 @@ class MurmurRelayChatClient(
                     android.util.Log.e("MurmurRelay", "Relay client send failed: ${result.message}")
                     onComplete(false)
                 }
-            }        }
+            }
+        }
     }
 
     fun observeMessages(
@@ -43,42 +38,6 @@ class MurmurRelayChatClient(
     ) {
         relay.observe(channelId, channelKey) { message ->
             onMessage(message.payload)
-        }
-    }
-
-    fun runLocalEchoTest(onResult: (String) -> Unit) {
-        relay.observe(channelId, channelKey) { message ->
-            onResult(message.payload)
-        }
-
-        relay.send(
-            channelId = channelId,
-            channelKey = channelKey,
-            payload = "MurmurRelay local test"
-        ) {
-            // No-op for now. We only care that observe receives the decrypted payload.
-        }
-    }
-
-    companion object {
-        fun createForChannel(channelId: String): MurmurRelayChatClient {
-            return MurmurRelayChatClient(
-                channelId = channelId,
-                channelKey = MurmurRelay.createChannelKey(),
-                transport = InMemoryRelayTransport()
-            )
-        }
-
-        fun createForFirebaseChannel(
-            channelId: String,
-            channelKey: String,
-            database: DatabaseReference
-        ): MurmurRelayChatClient {
-            return MurmurRelayChatClient(
-                channelId = channelId,
-                channelKey = channelKey,
-                transport = FirebaseMurmurRelayTransport(database)
-            )
         }
     }
 }
