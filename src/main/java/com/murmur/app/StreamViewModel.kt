@@ -11,20 +11,21 @@ class StreamViewModel(
     private val streamId: String
 ) : ViewModel() {
 
-    private val repository = StreamRepository(context, streamId)
-
+    private val appContext = context.applicationContext
+    private val repository = StreamRepository(appContext, streamId)
     val shouldLeaveStream = MutableStateFlow(false)
     val messages: StateFlow<List<String>> = repository.messages
     val memberCount: StateFlow<Int> = repository.memberCount
     val isCreator: StateFlow<Boolean> = repository.isCreator
     val streamDeleted: StateFlow<Boolean> = repository.streamDeleted
     private var lastSendAtMs: Long = 0L
-    private val MIN_SEND_INTERVAL_MS = 500L
 
+    private companion object {
+        const val MIN_SEND_INTERVAL_MS = 500L
+    }
     fun sendMessage(message: String) {
         val now = System.currentTimeMillis()
         if (now - lastSendAtMs < MIN_SEND_INTERVAL_MS) {
-            // too fast, ignore
             return
         }
         lastSendAtMs = now
@@ -47,7 +48,7 @@ class StreamViewModel(
     fun refreshStreamStatus() = repository.refreshStreamStatus()
 
     fun handleStreamDeleted() {
-        StreamSession.clearStreamId(context)
+        StreamSession.clearStreamId(appContext)
     }
 
     override fun onCleared() {
@@ -61,6 +62,11 @@ class StreamViewModelFactory(
     private val streamId: String
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        return StreamViewModel(context, streamId) as T
+        if (modelClass.isAssignableFrom(StreamViewModel::class.java)) {
+            @Suppress("UNCHECKED_CAST")
+            return StreamViewModel(context, streamId) as T
+        }
+
+        throw IllegalArgumentException("Unknown ViewModel class")
     }
 }
