@@ -88,7 +88,14 @@ class QRScannerActivity : ComponentActivity() {
 
     @androidx.camera.core.ExperimentalGetImage
     private fun processImageProxy(imageProxy: ImageProxy) {
-        val mediaImage = imageProxy.image ?: return
+
+        val mediaImage = imageProxy.image
+
+        if (mediaImage == null) {
+            imageProxy.close()
+            return
+        }
+
         val image = InputImage.fromMediaImage(mediaImage, imageProxy.imageInfo.rotationDegrees)
 
         val scanner = BarcodeScanning.getClient()
@@ -186,6 +193,11 @@ class QRScannerActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        cameraExecutor.shutdown()
     }
 
 
