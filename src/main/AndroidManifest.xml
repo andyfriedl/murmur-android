@@ -24,7 +24,7 @@
             android:name="com.murmur.app.MainActivity"
             android:exported="true"
             android:label="@string/app_name"
-            android:theme="@style/Theme.Murmur">
+            android:theme="@style/Theme.Murmur"
             android:launchMode="singleTop">
 
 
