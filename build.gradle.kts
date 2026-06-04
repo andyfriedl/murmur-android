@@ -42,7 +42,7 @@ android {
         create("prod") {
             dimension = "env"
             buildConfigField("boolean", "IS_DEV", "false")
-            buildConfigField("boolean", "TEST_MODE_LOBBY", "false") // ←  testing build
+            buildConfigField("boolean", "TEST_MODE_LOBBY", "false")
         }
     }
 
@@ -66,13 +66,10 @@ android {
 dependencies {
     implementation(project(":murmurrelay_core"))
 
-    implementation("com.android.billingclient:billing-ktx:7.0.0")
     implementation("androidx.compose.ui:ui-text-google-fonts:1.6.5")
     implementation("androidx.fragment:fragment-ktx:1.6.2")
     implementation("com.airbnb.android:lottie-compose:6.4.0")
 
-
-    // ✅ Keep foundation at this version for animateItemPlacement()
     implementation("androidx.compose.foundation:foundation:1.6.5")
 
     // CameraX
