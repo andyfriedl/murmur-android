@@ -778,24 +778,3 @@ fun StreamScreen(
         }
     }
 }
-
-@Composable
-fun DevBadge(show: Boolean) {
-    if (!show) return
-    androidx.compose.material3.Surface(
-        color = Color(0xFF9C27B0),
-        shape = RoundedCornerShape(bottomStart = 8.dp, bottomEnd = 8.dp)
-    ) {
-        Text(
-            "DEV",
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 4.dp),
-            textAlign = TextAlign.Center,
-            color = Color.White,
-            style = MaterialTheme.typography.labelLarge
-        )
-    }
-}
-
-
