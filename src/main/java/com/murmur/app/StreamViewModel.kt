@@ -3,8 +3,9 @@ package com.murmur.app
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import kotlinx.coroutines.flow.StateFlow
-import androidx.lifecycle.ViewModelProvider
 import kotlinx.coroutines.flow.MutableStateFlow
+
+private const val MIN_SEND_INTERVAL_MS = 500L
 
 class StreamViewModel(
     private val context: Context,
@@ -20,9 +21,6 @@ class StreamViewModel(
     val streamDeleted: StateFlow<Boolean> = repository.streamDeleted
     private var lastSendAtMs: Long = 0L
 
-    private companion object {
-        const val MIN_SEND_INTERVAL_MS = 500L
-    }
     fun sendMessage(message: String) {
         val now = System.currentTimeMillis()
         if (now - lastSendAtMs < MIN_SEND_INTERVAL_MS) {
@@ -54,19 +52,5 @@ class StreamViewModel(
     override fun onCleared() {
         super.onCleared()
         repository.clear()
-    }
-}
-
-class StreamViewModelFactory(
-    private val context: Context,
-    private val streamId: String
-) : ViewModelProvider.Factory {
-    override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        if (modelClass.isAssignableFrom(StreamViewModel::class.java)) {
-            @Suppress("UNCHECKED_CAST")
-            return StreamViewModel(context, streamId) as T
-        }
-
-        throw IllegalArgumentException("Unknown ViewModel class")
     }
 }
