@@ -9,7 +9,6 @@ import com.google.firebase.database.ValueEventListener
 import com.google.firebase.database.database
 import kotlinx.coroutines.flow.MutableStateFlow
 import com.google.firebase.auth.FirebaseAuth
-import android.util.Log
 
 
 class StreamRepository(private val context: Context, private val streamId: String) {
@@ -67,12 +66,10 @@ class StreamRepository(private val context: Context, private val streamId: Strin
 
     fun sendMessage(msg: String) {
         if (relayClient == null) {
-            Log.e("MurmurRelay", "Relay send blocked: no relay key")
             return
         }
 
         relayClient.sendMessage(msg) { success ->
-            Log.d("MurmurRelay", "Relay send success: $success")
         }
 
         db.child("streams/$streamId/lastActive")
@@ -82,7 +79,7 @@ class StreamRepository(private val context: Context, private val streamId: Strin
     private fun observeMurmurRelayMessages() {
         relayClient?.observeMessages { relayMessage ->
             messages.value = messages.value + relayMessage
-        } ?: Log.e("MurmurRelay", "Relay observe blocked: no relay key")
+        }
     }
 
     private fun observeConnection() {
