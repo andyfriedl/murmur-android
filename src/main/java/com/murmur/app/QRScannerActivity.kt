@@ -5,7 +5,6 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import java.net.URLDecoder
 import android.os.Bundle
-import android.util.Log
 import android.util.Size
 import android.widget.Toast
 import androidx.activity.ComponentActivity
@@ -79,8 +78,7 @@ class QRScannerActivity : ComponentActivity() {
                 cameraProvider.bindToLifecycle(
                     this, cameraSelector, preview, imageAnalyzer
                 )
-            } catch (e: Exception) {
-                e.printStackTrace()
+            } catch (_: Exception) {
             }
 
         }, ContextCompat.getMainExecutor(this))
@@ -110,9 +108,6 @@ class QRScannerActivity : ComponentActivity() {
 
                 }
             }
-            .addOnFailureListener {
-                it.printStackTrace()
-            }
             .addOnCompleteListener {
                 imageProxy.close()
             }
@@ -128,8 +123,6 @@ class QRScannerActivity : ComponentActivity() {
             }
         }
 
-        // 1) Intent URI path:
-        // intent://join?sid=STREAM_ID&rk=RELAY_KEY#Intent;...
         val sidFromIntent = if (raw.startsWith("intent://", ignoreCase = true)) {
             extractQueryParam("sid")
         } else null
@@ -159,9 +152,7 @@ class QRScannerActivity : ComponentActivity() {
             return
         }
 
-        // 2) Legacy path: scantojoin::<inviteId>
         if (!raw.startsWith("scantojoin::", ignoreCase = true)) {
-            Log.w("QR_SCAN", "Scanned code not recognized: $raw")
             runOnUiThread {
                 Toast.makeText(this, "Unrecognized QR code", Toast.LENGTH_SHORT).show()
                 foundCode = false
